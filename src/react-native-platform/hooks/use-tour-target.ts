@@ -21,8 +21,8 @@ import {targetRegistry} from '../target-registry';
  * ];
  * ```
  */
-export function useTourTarget<T = unknown>(id: string): RefObject<T | undefined> {
-  const ref = useRef<T | undefined>(undefined);
+export function useTourTarget<T = unknown>(id: string): RefObject<T | null> {
+  const ref = useRef<T | null>(null);
 
   useEffect(() => {
     targetRegistry.register(id, ref as RefObject<unknown>);
