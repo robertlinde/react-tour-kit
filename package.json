@@ -15,10 +15,10 @@
   "scripts": {
     "start:dev": "tsc --watch",
     "build": "tsc",
-    "lint": "xo src",
-    "lint:fix": "xo --fix src",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "lint": "xo",
+    "lint:fix": "xo --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm run build",
     "prepare": "husky || true"
   },
@@ -84,14 +84,5 @@
   ],
   "engines": {
     "node": ">=18.0.0"
-  },
-  "xo": {
-    "ignores": [
-      "demos/**",
-      "demos"
-    ],
-    "rules": {
-      "@stylistic/no-mixed-operators": "off"
-    }
   }
 }

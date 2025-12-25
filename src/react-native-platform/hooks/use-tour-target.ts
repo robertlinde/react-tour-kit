@@ -1,5 +1,4 @@
 import {useRef, useEffect, type RefObject} from 'react';
-// eslint-disable-next-line import-x/extensions
 import {targetRegistry} from '../target-registry';
 
 /**

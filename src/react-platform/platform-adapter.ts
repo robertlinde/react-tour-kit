@@ -1,12 +1,5 @@
 import {type RefObject} from 'react';
-import {
-  type PlatformAdapter,
-  type Rect,
-  type TourTarget,
-  type KeyboardHandlers,
-  // eslint-disable-next-line import-x/extensions
-} from '../shared';
-// eslint-disable-next-line import-x/extensions
+import {type PlatformAdapter, type Rect, type TourTarget, type KeyboardHandlers} from '../shared';
 import {findVisibleElement} from './utils';
 
 /**

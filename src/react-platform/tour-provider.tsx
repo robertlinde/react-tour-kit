@@ -9,15 +9,10 @@ import {
   TourContext,
   calculateTooltipPosition,
   resolveTheme,
-  // eslint-disable-next-line import-x/extensions
 } from '../shared';
-// eslint-disable-next-line import-x/extensions
 import {TourTooltip as DefaultTourTooltip} from './components/tour-tooltip';
-// eslint-disable-next-line import-x/extensions
 import {TourOverlay as DefaultTourOverlay} from './components/tour-overlay';
-// eslint-disable-next-line import-x/extensions
 import {webPlatformAdapter} from './platform-adapter';
-// eslint-disable-next-line import-x/extensions
 import {type TourProviderProps} from '.';
 
 const defaultPlacement = 'bottom' as const;

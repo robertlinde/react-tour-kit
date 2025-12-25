@@ -1,7 +1,6 @@
 'use client';
 
 import {type JSX} from 'react';
-// eslint-disable-next-line import-x/extensions
 import {type TourOverlayProps} from '../../shared';
 
 const highlightPadding = 8;

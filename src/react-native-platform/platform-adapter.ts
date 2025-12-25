@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports, unicorn/prefer-module, @typescript-eslint/consistent-type-imports -- React Native requires dynamic imports to avoid bundling issues on web */
 import {type RefObject} from 'react';
 import {type PlatformAdapter, type Rect, type TourTarget, type KeyboardHandlers} from '../shared/index.js';
-// eslint-disable-next-line import-x/extensions
 import {targetRegistry} from './target-registry';
 
 /**
@@ -29,14 +27,18 @@ async function measureNativeElement(ref: RefObject<unknown>): Promise<Rect | und
     }
 
     // React Native components with measure() method
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- RN measure API
-    const measureable = component as any;
+    type Measureable = {
+      measure: (
+        callback: (x: number, y: number, width: number, height: number, pageX: number, pageY: number) => void,
+      ) => void;
+    };
+
+    const measureable = component as unknown as Measureable;
     if (typeof measureable.measure !== 'function') {
       resolve(undefined);
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, max-params -- RN measure API requires 6 parameters
     measureable.measure((_x: number, _y: number, width: number, height: number, pageX: number, pageY: number) => {
       resolve({
         top: pageY,
@@ -73,7 +75,7 @@ export const nativePlatformAdapter: PlatformAdapter = {
 
   getViewportDimensions(): {width: number; height: number} {
     // Dynamic import to avoid bundling issues
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- React Native module name
+
     const {Dimensions} = require('react-native') as typeof import('react-native');
     const {width, height} = Dimensions.get('window');
     return {width, height};
@@ -91,7 +93,6 @@ export const nativePlatformAdapter: PlatformAdapter = {
     // hardware back button on Android or custom UI buttons
     // For now, this is a no-op - navigation is done via UI buttons
 
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- React Native module names
     const {BackHandler, Platform} = require('react-native') as typeof import('react-native');
 
     // Handle Android back button as "escape"
@@ -113,7 +114,6 @@ export const nativePlatformAdapter: PlatformAdapter = {
   },
 
   subscribeToLayout(callback: () => void): () => void {
-    // eslint-disable-next-line @typescript-eslint/naming-convention -- React Native module name
     const {Dimensions} = require('react-native') as typeof import('react-native');
 
     const subscription = Dimensions.addEventListener('change', callback);

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports, unicorn/prefer-module, @typescript-eslint/consistent-type-imports -- React Native requires dynamic imports to avoid bundling issues on web */
 import {type JSX, useCallback, useState, useEffect, useRef, useMemo} from 'react';
 import type {View as ViewType} from 'react-native';
 import {
@@ -9,11 +8,8 @@ import {
   calculateTooltipPosition,
   resolveTheme,
 } from '../shared/index.js';
-// eslint-disable-next-line import-x/extensions
 import {TourTooltip as DefaultTourTooltip} from './components/tour-tooltip';
-// eslint-disable-next-line import-x/extensions
 import {TourOverlay as DefaultTourOverlay} from './components/tour-overlay';
-// eslint-disable-next-line import-x/extensions
 import {nativePlatformAdapter} from './platform-adapter';
 import {TourProviderProps} from './types/tour-provider.props.type';
 

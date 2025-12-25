@@ -1,4 +1,3 @@
-// eslint-disable-next-line import-x/extensions
 import {type Rect} from '../types';
 
 const tooltipWidthDesktop = 400;

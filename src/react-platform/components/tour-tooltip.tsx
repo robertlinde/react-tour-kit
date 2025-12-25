@@ -1,7 +1,6 @@
 'use client';
 
 import {type JSX, type ForwardedRef, forwardRef} from 'react';
-// eslint-disable-next-line import-x/extensions
 import {type TourTooltipProps} from '../../shared';
 
 function TourTooltipComponent(

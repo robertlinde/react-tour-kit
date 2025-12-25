@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports, unicorn/prefer-module, @typescript-eslint/consistent-type-imports -- React Native requires dynamic imports to avoid bundling issues on web */
 import {type ReactNode, useMemo} from 'react';
 import type {ViewStyle} from 'react-native';
-// eslint-disable-next-line import-x/extensions
 import {type TourOverlayProps} from '../../shared';
 
 const {View, StyleSheet, TouchableWithoutFeedback} = require('react-native') as typeof import('react-native');

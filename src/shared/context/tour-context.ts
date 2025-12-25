@@ -1,5 +1,4 @@
 import {createContext} from 'react';
-// eslint-disable-next-line import-x/extensions
 import {type TourContextType} from '../types';
 
 /**
@@ -27,5 +26,5 @@ export const defaultTourContext: TourContextType = {
  * React context for tour state and controls.
  * Shared between web and React Native implementations.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention -- React Context uses PascalCase by convention
+
 export const TourContext = createContext<TourContextType>(defaultTourContext);

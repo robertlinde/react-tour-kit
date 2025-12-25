@@ -24,7 +24,9 @@
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .nav-link:hover {
@@ -81,7 +83,9 @@
   border-radius: 12px;
   padding: 2rem;
   text-align: center;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .feature-card:hover {
@@ -120,7 +124,9 @@
   font-weight: 600;
   border-radius: 50px;
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
 }
 
 .cta-button:hover {

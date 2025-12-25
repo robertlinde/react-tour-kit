@@ -2,7 +2,7 @@ import {type FlatXoConfig} from 'xo';
 
 const xoConfig: FlatXoConfig = [
 	{
-		ignores: ['node_modules', 'dist', 'demo', 'demo-native', 'demos'],
+		ignores: ['node_modules', 'dist'],
 	},
 	{
 		files: ['src/**/*.ts', 'src/**/*.tsx'],
@@ -74,6 +74,47 @@ const xoConfig: FlatXoConfig = [
 			'max-params': 'off',
 			// Allow unused params prefixed with underscore (for interface compliance)
 			'@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_', varsIgnorePattern: '^_'}],
+		},
+	},
+	// Demo files - looser rules for example code
+	{
+		files: ['demos/**/*.ts', 'demos/**/*.tsx'],
+		react: true,
+		prettier: true,
+		space: true,
+		semicolon: true,
+		rules: {
+			// Disable stylistic rules
+			'@stylistic/indent': 'off',
+			'@stylistic/object-curly-newline': 'off',
+			'@stylistic/no-mixed-operators': 'off',
+			'no-mixed-operators': 'off',
+
+			// React rules
+			'react/react-in-jsx-scope': 'off',
+
+			// Looser TypeScript rules for demos
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-unsafe-call': 'off',
+			'@typescript-eslint/no-unsafe-argument': 'off',
+			'@typescript-eslint/restrict-plus-operands': 'off',
+			'@typescript-eslint/explicit-function-return-type': 'off',
+			'@typescript-eslint/naming-convention': 'off',
+			'@typescript-eslint/capitalized-comments': 'off',
+			'capitalized-comments': 'off',
+			'unicorn/prevent-abbreviations': 'off',
+			'unicorn/filename-case': 'off',
+
+			// Import rules
+			'import-x/extensions': 'off',
+			'n/file-extension-in-import': 'off',
+		},
+	},
+	// Xo.config.ts itself
+	{
+		files: ['xo.config.ts'],
+		rules: {
+			'@typescript-eslint/naming-convention': 'off',
 		},
 	},
 ];

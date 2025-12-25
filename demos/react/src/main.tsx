@@ -6,9 +6,11 @@ import App from './app.tsx';
 
 const rootElement = document.querySelector('#root');
 if (rootElement) {
-	createRoot(rootElement).render(<StrictMode>
-		<TourProvider>
-			<App />
-		</TourProvider>
-	</StrictMode>);
+  createRoot(rootElement).render(
+    <StrictMode>
+      <TourProvider>
+        <App />
+      </TourProvider>
+    </StrictMode>,
+  );
 }
