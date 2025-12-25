@@ -1,5 +1,5 @@
 {
-  "name": "react-tour-kit-demo-native",
+  "name": "@robertlinde/react-tour-kit-demo-native",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {

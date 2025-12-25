@@ -16,7 +16,7 @@ Cross-platform guided tour library for React and React Native. Build interactive
 ## Installation
 
 ```bash
-npm install react-tour-kit
+npm install @robertlinde/react-tour-kit
 ```
 
 ## Live Demos
