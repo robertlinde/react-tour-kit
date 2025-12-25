@@ -89,6 +89,9 @@
     "ignores": [
       "demos/**",
       "demos"
-    ]
+    ],
+    "rules": {
+      "@stylistic/no-mixed-operators": "off"
+    }
   }
 }

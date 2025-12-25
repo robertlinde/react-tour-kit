@@ -2,14 +2,21 @@ import {type FlatXoConfig} from 'xo';
 
 const xoConfig: FlatXoConfig = [
 	{
-		ignores: ['node_modules', 'dist', 'demo', 'demo-native'],
+		ignores: ['node_modules', 'dist', 'demo', 'demo-native', 'demos'],
 	},
 	{
+		files: ['src/**/*.ts', 'src/**/*.tsx'],
 		react: true,
 		prettier: true,
 		space: true,
 		semicolon: true,
 		rules: {
+			// Disable stylistic rules - let prettier handle formatting
+			'@stylistic/indent': 'off',
+			'@stylistic/object-curly-newline': 'off',
+			'@stylistic/no-mixed-operators': 'off',
+			'no-mixed-operators': 'off',
+
 			// React 17+ doesn't need React in scope
 			'react/react-in-jsx-scope': 'off',
 
@@ -55,9 +62,8 @@ const xoConfig: FlatXoConfig = [
 		},
 	},
 	// React Native files need special rules for dynamic imports
-	// This must come AFTER the general config to override rules
 	{
-		files: ['src/**/*.native.tsx', 'src/**/native/**/*.ts', 'src/tour-provider.native.tsx', 'src/native.ts'],
+		files: ['src/react-native-platform/**/*.ts', 'src/react-native-platform/**/*.tsx', 'src/react-native.ts'],
 		rules: {
 			// Dynamic require is needed to avoid bundling RN in web builds
 			'unicorn/prefer-module': 'off',
