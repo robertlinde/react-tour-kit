@@ -1,6 +1,6 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import {TourProvider} from 'react-tour-kit/react';
+import {TourProvider} from '@robertlinde/react-tour-kit/react';
 import './index.css';
 import App from './app.tsx';
 

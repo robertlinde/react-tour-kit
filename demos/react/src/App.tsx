@@ -1,6 +1,6 @@
 import React from 'react';
 import {BrowserRouter, Routes, Route, Link, useNavigate} from 'react-router-dom';
-import {useTour, type TourStep} from 'react-tour-kit/react';
+import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
 import './app.css';
 
 // Tour steps that span multiple pages
@@ -196,7 +196,7 @@ function AppContent(): React.JSX.Element {
             GitHub
           </a>
           {' | '}
-          <a href="https://www.npmjs.com/package/react-tour-kit" target="_blank" rel="noopener noreferrer">
+          <a href="https://www.npmjs.com/package/@robertlinde/react-tour-kit" target="_blank" rel="noopener noreferrer">
             npm
           </a>
         </p>

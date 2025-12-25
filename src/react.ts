@@ -1,5 +1,5 @@
 // React Web entry point
-// Import from 'react-tour-kit/react'
+// Import from '@robertlinde/react-tour-kit/react'
 
 // Main exports
 

@@ -1,5 +1,5 @@
 // React Native entry point
-// Import from 'react-tour-kit/react-native'
+// Import from '@robertlinde/react-tour-kit/react-native'
 
 // Main exports
 

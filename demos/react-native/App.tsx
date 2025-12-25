@@ -4,7 +4,7 @@ import {StyleSheet, Text, View, TouchableOpacity, ScrollView} from 'react-native
 import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator, type NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {TourProvider, useTour, useTourTarget, type TourStep} from 'react-tour-kit/react-native';
+import {TourProvider, useTour, useTourTarget, type TourStep} from '@robertlinde/react-tour-kit/react-native';
 
 type RootStackParameterList = {
   Home: undefined;

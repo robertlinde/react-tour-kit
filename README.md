@@ -51,7 +51,7 @@ npm run ios  # or npm run android
 #### 1. Wrap your app with TourProvider
 
 ```tsx
-import {TourProvider} from 'react-tour-kit/react';
+import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 function App() {
   return (
@@ -83,7 +83,7 @@ function Dashboard() {
 #### 3. Start a tour
 
 ```tsx
-import {useTour, type TourStep} from 'react-tour-kit/react';
+import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
 
 const tourSteps: TourStep[] = [
   {
@@ -130,7 +130,7 @@ function WelcomeButton() {
 #### 1. Wrap your app with TourProvider
 
 ```tsx
-import {TourProvider} from 'react-tour-kit/react-native';
+import {TourProvider} from '@robertlinde/react-tour-kit/react-native';
 
 function App() {
   return (
@@ -145,7 +145,7 @@ function App() {
 
 ```tsx
 import {View} from 'react-native';
-import {useTourTarget} from 'react-tour-kit/react-native';
+import {useTourTarget} from '@robertlinde/react-tour-kit/react-native';
 
 function MyComponent() {
   const welcomeRef = useTourTarget<View>('welcome-button');
@@ -168,7 +168,7 @@ function MyComponent() {
 #### 3. Start a tour
 
 ```tsx
-import {useTour, type TourStep} from 'react-tour-kit/react-native';
+import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react-native';
 
 const tourSteps: TourStep[] = [
   {
@@ -202,7 +202,7 @@ You can also pass refs directly instead of string IDs:
 
 ```tsx
 import {useRef} from 'react';
-import {useTour, type TourStep} from 'react-tour-kit/react-native';
+import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react-native';
 
 function MyComponent() {
   const buttonRef = useRef(null);
@@ -240,7 +240,7 @@ Tours can span multiple pages (web) or screens (React Native). The key is to:
 
 ```tsx
 import {BrowserRouter, useNavigate} from 'react-router-dom';
-import {TourProvider, useTour, type TourStep} from 'react-tour-kit/react';
+import {TourProvider, useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
 
 // TourProvider wraps the router
 function App() {
@@ -306,7 +306,7 @@ function Home() {
 ```tsx
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {TourProvider, useTour, useTourTarget, type TourStep} from 'react-tour-kit/react-native';
+import {TourProvider, useTour, useTourTarget, type TourStep} from '@robertlinde/react-tour-kit/react-native';
 
 const Stack = createNativeStackNavigator();
 
@@ -390,7 +390,7 @@ function SettingsScreen() {
 The provider component that enables tour functionality throughout your app.
 
 ```tsx
-import {TourProvider} from 'react-tour-kit/react';
+import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 <TourProvider
   TooltipComponent={CustomTooltip} // Optional: custom tooltip component
@@ -420,7 +420,7 @@ import {TourProvider} from 'react-tour-kit/react';
 Access the tour context from any component.
 
 ```tsx
-import {useTour} from 'react-tour-kit/react';
+import {useTour} from '@robertlinde/react-tour-kit/react';
 
 function MyComponent() {
   const {
@@ -463,7 +463,7 @@ Customize the look of the default tooltip and overlay without building custom co
 ### Theme Options
 
 ```tsx
-import {TourProvider, type TourTheme} from 'react-tour-kit/react';
+import {TourProvider, type TourTheme} from '@robertlinde/react-tour-kit/react';
 
 const theme: TourTheme = {
   primaryColor: '#10b981', // Buttons, step badge, highlight border (default: '#3b82f6')
@@ -510,7 +510,7 @@ const brandTheme: TourTheme = {
 Theming works the same way in React Native:
 
 ```tsx
-import {TourProvider, type TourTheme} from 'react-tour-kit/react-native';
+import {TourProvider, type TourTheme} from '@robertlinde/react-tour-kit/react-native';
 
 const theme: TourTheme = {
   primaryColor: '#10b981',
@@ -563,7 +563,7 @@ Create your own tooltip with your design system.
 
 ```tsx
 import {forwardRef} from 'react';
-import {TourProvider, type TourTooltipProps} from 'react-tour-kit/react';
+import {TourProvider, type TourTooltipProps} from '@robertlinde/react-tour-kit/react';
 
 const CustomTooltip = forwardRef<HTMLDivElement, TourTooltipProps>(
   ({title, content, currentStep, totalSteps, position, isPositioned, onClose, onNext, onPrev}, ref) => (
@@ -607,7 +607,7 @@ function App() {
 ```tsx
 import {forwardRef} from 'react';
 import {View, Text, TouchableOpacity} from 'react-native';
-import {TourProvider, type TourTooltipProps} from 'react-tour-kit/react-native';
+import {TourProvider, type TourTooltipProps} from '@robertlinde/react-tour-kit/react-native';
 
 const CustomTooltip = forwardRef<View, TourTooltipProps>(
   ({title, content, position, isPositioned, onNext, onClose}, ref) => (
@@ -648,7 +648,7 @@ Customize the backdrop overlay.
 **Web:**
 
 ```tsx
-import {TourProvider, type TourOverlayProps} from 'react-tour-kit/react';
+import {TourProvider, type TourOverlayProps} from '@robertlinde/react-tour-kit/react';
 
 function CustomOverlay({highlightRect, onClose}: TourOverlayProps) {
   return (
@@ -682,7 +682,7 @@ function App() {
 
 ```tsx
 import {View, TouchableWithoutFeedback, StyleSheet} from 'react-native';
-import {TourProvider, type TourOverlayProps} from 'react-tour-kit/react-native';
+import {TourProvider, type TourOverlayProps} from '@robertlinde/react-tour-kit/react-native';
 
 function CustomOverlay({highlightRect, onClose}: TourOverlayProps) {
   return (
@@ -720,7 +720,7 @@ function App() {
 Track which tours users have completed:
 
 ```tsx
-import {TourProvider} from 'react-tour-kit/react';
+import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 function App() {
   const handleTourEnd = async (tourId: string | null) => {
@@ -794,7 +794,7 @@ import type {
   TourTooltipProps,
   TourOverlayProps,
   TourTheme,
-} from 'react-tour-kit/react';
+} from '@robertlinde/react-tour-kit/react';
 ```
 
 ## Utilities
@@ -805,7 +805,7 @@ The package exports utility functions for custom implementations:
 import {
   calculateTooltipPosition, // Calculate optimal tooltip position
   findVisibleElement, // Find first visible element matching selector
-} from 'react-tour-kit/react';
+} from '@robertlinde/react-tour-kit/react';
 ```
 
 ## Development
