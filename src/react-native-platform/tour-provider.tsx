@@ -16,7 +16,6 @@ import {TourProviderProps} from './types/tour-provider.props.type';
 const {Modal} = require('react-native') as typeof import('react-native');
 
 const defaultPlacement = 'bottom' as const;
-const scrollDelayMs = 350;
 const positionRetryDelayMs = 100;
 const initialPositionDelayMs = 50;
 const maxPositionAttempts = 20;
@@ -156,11 +155,10 @@ export function TourProvider({
       setHighlightRect(rect);
       setIsPositioned(false);
 
-      await platform.scrollToElement(currentTourStep.target);
-
+      // Trigger positioning - scrolling happens after tooltip is measured
       setTimeout(() => {
         setPositionKey((k) => k + 1);
-      }, scrollDelayMs);
+      }, initialPositionDelayMs);
     };
 
     void runStep();
@@ -205,6 +203,9 @@ export function TourProvider({
 
           setTooltipPosition(position);
           setIsPositioned(true);
+
+          // Scroll after positioning so we have actual tooltip dimensions
+          await platform.scrollToElement(currentTourStep.target, placement, tooltipDimensions.height);
         })();
       });
     };

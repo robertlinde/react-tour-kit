@@ -1,4 +1,4 @@
-import {type TourTarget} from './rect.type';
+import {type TourTarget, type Placement} from './rect.type';
 
 export type TourStep = {
   /**
@@ -9,7 +9,7 @@ export type TourStep = {
   target: TourTarget;
   title: string;
   content: string;
-  placement?: 'top' | 'bottom' | 'left' | 'right';
+  placement?: Placement;
   /** Called before this step is shown. Use to switch tabs, open dialogs, etc. */
   onBeforeStep?: () => void | Promise<void>;
 };

@@ -3,6 +3,7 @@
 export type {
   Rect,
   TourTarget,
+  Placement,
   PlatformAdapter,
   KeyboardHandlers,
   TourTheme,

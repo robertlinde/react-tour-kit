@@ -1,5 +1,11 @@
 import {type RefObject} from 'react';
-import {type PlatformAdapter, type Rect, type TourTarget, type KeyboardHandlers} from '../shared/index.js';
+import {
+  type PlatformAdapter,
+  type Rect,
+  type TourTarget,
+  type KeyboardHandlers,
+  type Placement,
+} from '../shared/index.js';
 import {targetRegistry} from './target-registry';
 
 /**
@@ -81,7 +87,7 @@ export const nativePlatformAdapter: PlatformAdapter = {
     return {width, height};
   },
 
-  async scrollToElement(): Promise<void> {
+  async scrollToElement(_target: TourTarget, _placement?: Placement, _tooltipHeight?: number): Promise<void> {
     // React Native scrolling depends on the parent ScrollView
     // This is a no-op by default - users can implement custom scrolling
     // via onBeforeStep in their tour steps
