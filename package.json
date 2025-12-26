@@ -1,6 +1,6 @@
 {
   "name": "@robertlinde/react-tour-kit",
-  "version": "0.0.4",
+  "version": "0.2.0",
   "description": "Cross-platform guided tour library for React and React Native. Build interactive onboarding experiences with customizable tooltips, smart positioning, cross-page navigation, and async step actions. Fully themeable with TypeScript support.",
   "author": "Robert Linde",
   "license": "MIT",
