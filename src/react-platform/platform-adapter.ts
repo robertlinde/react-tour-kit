@@ -58,7 +58,10 @@ export const webPlatformAdapter: PlatformAdapter = {
     const element = typeof target === 'string' ? findVisibleElement(target) : (target as RefObject<Element>).current;
 
     if (element) {
-      element.scrollIntoView({behavior: 'smooth', block: 'center'});
+      // Scroll so the element is near the top of the viewport, leaving space for the tooltip above.
+      // Using 'start' instead of 'center' ensures the tooltip (which typically appears above or below)
+      // is visible without requiring additional scrolling.
+      element.scrollIntoView({behavior: 'smooth', block: 'start'});
     }
   },
 
