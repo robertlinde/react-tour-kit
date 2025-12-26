@@ -1,4 +1,4 @@
-export type {Rect, TourTarget} from './rect.type';
+export type {Rect, TourTarget, Placement} from './rect.type';
 export type {PlatformAdapter, KeyboardHandlers} from './platform-adapter.type';
 export type {TourTheme} from './tour-theme.type';
 export {defaultTheme, resolveTheme} from './tour-theme.type';

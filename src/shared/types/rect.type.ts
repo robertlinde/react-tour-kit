@@ -19,3 +19,8 @@ export type Rect = {
  * - React Native: RefObject or string ID registered via useTourTarget
  */
 export type TourTarget = string | RefObject<unknown>;
+
+/**
+ * Tooltip placement relative to the target element.
+ */
+export type Placement = 'top' | 'bottom' | 'left' | 'right';

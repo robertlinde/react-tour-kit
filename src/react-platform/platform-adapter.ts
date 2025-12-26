@@ -1,5 +1,5 @@
 import {type RefObject} from 'react';
-import {type PlatformAdapter, type Rect, type TourTarget, type KeyboardHandlers} from '../shared';
+import {type PlatformAdapter, type Rect, type TourTarget, type KeyboardHandlers, type Placement} from '../shared';
 import {findVisibleElement} from './utils';
 
 /**
@@ -54,14 +54,24 @@ export const webPlatformAdapter: PlatformAdapter = {
     };
   },
 
-  async scrollToElement(target: TourTarget): Promise<void> {
+  async scrollToElement(target: TourTarget, placement?: Placement, tooltipHeight?: number): Promise<void> {
     const element = typeof target === 'string' ? findVisibleElement(target) : (target as RefObject<Element>).current;
 
     if (element) {
-      // Scroll so the element is near the top of the viewport, leaving space for the tooltip above.
-      // Using 'start' instead of 'center' ensures the tooltip (which typically appears above or below)
-      // is visible without requiring additional scrolling.
-      element.scrollIntoView({behavior: 'smooth', block: 'start'});
+      const rect = element.getBoundingClientRect();
+      const padding = 16;
+      // Use actual tooltip height if provided, otherwise use a reasonable default
+      const tooltipSpace = (tooltipHeight ?? 200) + padding * 2;
+
+      const targetScrollY =
+        placement === 'top' || placement === 'left' || placement === 'right'
+          ? window.scrollY + rect.top - tooltipSpace
+          : window.scrollY + rect.top - padding;
+
+      window.scrollTo({
+        top: Math.max(0, targetScrollY),
+        behavior: 'smooth',
+      });
     }
   },
 

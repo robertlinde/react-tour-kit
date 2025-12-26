@@ -1,5 +1,5 @@
 import {type RefObject} from 'react';
-import {type Rect, type TourTarget} from './rect.type';
+import {type Rect, type TourTarget, type Placement} from './rect.type';
 
 /**
  * Keyboard event handlers for tour navigation.
@@ -36,10 +36,12 @@ export type PlatformAdapter = {
   readonly getViewportDimensions: () => {width: number; height: number};
 
   /**
-   * Scrolls the viewport to make the target element visible.
+   * Scrolls the viewport to make the target element and tooltip visible.
    * @param target - Element to scroll into view
+   * @param placement - Where the tooltip will appear relative to the element
+   * @param tooltipHeight - Actual height of the tooltip for accurate scrolling
    */
-  readonly scrollToElement: (target: TourTarget) => Promise<void>;
+  readonly scrollToElement: (target: TourTarget, placement?: Placement, tooltipHeight?: number) => Promise<void>;
 
   /**
    * Subscribes to keyboard events for tour navigation.
