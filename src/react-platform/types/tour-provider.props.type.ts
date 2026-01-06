@@ -1,5 +1,11 @@
 import {type ComponentType, type ForwardRefExoticComponent, type ReactNode, type RefAttributes} from 'react';
-import {type PlatformAdapter, type TourOverlayProps, type TourTheme, type TourTooltipProps} from 'src/shared';
+import {
+  type PlatformAdapter,
+  type TourI18n,
+  type TourOverlayProps,
+  type TourTheme,
+  type TourTooltipProps,
+} from 'src/shared';
 
 export type TourProviderProps = {
   readonly children: ReactNode;
@@ -26,4 +32,8 @@ export type TourProviderProps = {
    * Defaults to the web platform adapter.
    */
   readonly platform?: PlatformAdapter;
+  /**
+   * Internationalization options for customizing text strings.
+   */
+  readonly i18n?: TourI18n;
 };
