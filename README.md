@@ -407,13 +407,14 @@ import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 #### Props
 
-| Prop               | Type                                          | Description                                         |
-| ------------------ | --------------------------------------------- | --------------------------------------------------- |
-| `children`         | `ReactNode`                                   | Your application content                            |
-| `theme`            | `TourTheme`                                   | Theme configuration for colors (see Theming below)  |
-| `TooltipComponent` | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)      |
-| `OverlayComponent` | `ComponentType<TourOverlayProps>`             | Custom overlay component                            |
-| `onTourEnd`        | `(tourId: string \| null) => void`            | Callback fired when tour ends (completed or closed) |
+| Prop               | Type                                          | Description                                                |
+| ------------------ | --------------------------------------------- | ---------------------------------------------------------- |
+| `children`         | `ReactNode`                                   | Your application content                                   |
+| `theme`            | `TourTheme`                                   | Theme configuration for colors (see Theming section)       |
+| `i18n`             | `TourI18n`                                    | Internationalization options for labels (see i18n section) |
+| `TooltipComponent` | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)             |
+| `OverlayComponent` | `ComponentType<TourOverlayProps>`             | Custom overlay component                                   |
+| `onTourEnd`        | `(tourId: string \| null) => void`            | Callback fired when tour ends (completed or closed)        |
 
 ### useTour Hook
 
@@ -525,6 +526,109 @@ function App() {
   );
 }
 ```
+
+---
+
+## Internationalization (i18n)
+
+Customize all text labels and templates to support different languages or match your app's terminology.
+
+### i18n Options
+
+```tsx
+import {TourProvider, type TourI18n} from '@robertlinde/react-tour-kit/react';
+
+const i18n: TourI18n = {
+  nextLabel: 'Next', // "Next" button text
+  prevLabel: 'Back', // "Back" button text
+  finishLabel: 'Finish', // Button text on last step (default: 'Finish' on web, 'Done' on native)
+  stepCounterTemplate: '{current} / {total}', // Step counter format (use {current} and {total} placeholders)
+  closeAriaLabel: 'Close tour', // Accessibility label for close button (web only)
+  dotAriaLabelTemplate: 'Go to step {step}', // Accessibility label template for step dots (web only)
+};
+
+function App() {
+  return (
+    <TourProvider i18n={i18n}>
+      <YourApp />
+    </TourProvider>
+  );
+}
+```
+
+### i18n Examples
+
+**Spanish:**
+
+```tsx
+const spanishI18n: TourI18n = {
+  nextLabel: 'Siguiente',
+  prevLabel: 'Anterior',
+  finishLabel: 'Finalizar',
+  stepCounterTemplate: 'Paso {current} de {total}',
+  closeAriaLabel: 'Cerrar tour',
+  dotAriaLabelTemplate: 'Ir al paso {step}',
+};
+```
+
+**German:**
+
+```tsx
+const germanI18n: TourI18n = {
+  nextLabel: 'Weiter',
+  prevLabel: 'Zurück',
+  finishLabel: 'Fertig',
+  stepCounterTemplate: 'Schritt {current} von {total}',
+  closeAriaLabel: 'Tour schließen',
+  dotAriaLabelTemplate: 'Zu Schritt {step} gehen',
+};
+```
+
+**Custom terminology:**
+
+```tsx
+const customI18n: TourI18n = {
+  nextLabel: 'Continue',
+  prevLabel: 'Go Back',
+  finishLabel: 'Got it!',
+  stepCounterTemplate: 'Step {current} of {total}',
+};
+// Other values use defaults
+```
+
+### React Native
+
+i18n works the same way in React Native:
+
+```tsx
+import {TourProvider, type TourI18n} from '@robertlinde/react-tour-kit/react-native';
+
+const i18n: TourI18n = {
+  nextLabel: 'Siguiente',
+  prevLabel: 'Anterior',
+  finishLabel: 'Listo',
+  stepCounterTemplate: 'Paso {current} de {total}',
+};
+
+function App() {
+  return (
+    <TourProvider i18n={i18n}>
+      <YourApp />
+    </TourProvider>
+  );
+}
+```
+
+### Default Values
+
+| Option                 | Web Default             | React Native Default          |
+| ---------------------- | ----------------------- | ----------------------------- |
+| `nextLabel`            | `'Next'`                | `'Next'`                      |
+| `prevLabel`            | `'Back'`                | `'Back'`                      |
+| `finishLabel`          | `'Finish'`              | `'Done'`                      |
+| `stepCounterTemplate`  | `'{current} / {total}'` | `'Step {current} of {total}'` |
+| `closeAriaLabel`       | `'Close tour'`          | N/A                           |
+| `dotAriaLabelTemplate` | `'Go to step {step}'`   | N/A                           |
 
 ---
 
@@ -794,6 +898,7 @@ import type {
   TourTooltipProps,
   TourOverlayProps,
   TourTheme,
+  TourI18n,
 } from '@robertlinde/react-tour-kit/react';
 ```
 
