@@ -14,7 +14,7 @@ export {useTourTarget} from './react-native-platform';
 export {TourOverlay, TourTooltip} from './react-native-platform';
 
 // Types
-export type {TourStep, TourContextType, TourTooltipProps, TourOverlayProps, TourTheme} from './shared';
+export type {TourStep, TourContextType, TourTooltipProps, TourOverlayProps, TourTheme, TourI18n} from './shared';
 
 // Platform types
 export type {Rect, TourTarget} from './shared';
