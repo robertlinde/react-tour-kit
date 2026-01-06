@@ -3,6 +3,15 @@
 import {type JSX, type ForwardedRef, forwardRef} from 'react';
 import {type TourTooltipProps} from '../../shared';
 
+const defaultI18n = {
+  nextLabel: 'Next',
+  prevLabel: 'Back',
+  finishLabel: 'Finish',
+  stepCounterTemplate: '{current} / {total}',
+  closeAriaLabel: 'Close tour',
+  dotAriaLabelTemplate: 'Go to step {step}',
+};
+
 function TourTooltipComponent(
   {
     title,
@@ -16,9 +25,15 @@ function TourTooltipComponent(
     onPrev,
     onGoToStep,
     theme,
+    i18n,
   }: TourTooltipProps,
   ref: ForwardedRef<HTMLDivElement>,
 ): JSX.Element {
+  const {nextLabel, prevLabel, finishLabel, stepCounterTemplate, closeAriaLabel, dotAriaLabelTemplate} = {
+    ...defaultI18n,
+    ...i18n,
+  };
+
   const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
 
@@ -136,9 +151,9 @@ function TourTooltipComponent(
       <div style={styles.card}>
         <div style={styles.header}>
           <span style={styles.stepTag}>
-            {currentStep + 1} / {totalSteps}
+            {stepCounterTemplate.replace('{current}', String(currentStep + 1)).replace('{total}', String(totalSteps))}
           </span>
-          <button type="button" style={styles.closeButton} aria-label="Close tour" onClick={onClose}>
+          <button type="button" style={styles.closeButton} aria-label={closeAriaLabel} onClick={onClose}>
             ✕
           </button>
         </div>
@@ -158,7 +173,7 @@ function TourTooltipComponent(
             disabled={isFirstStep}
             onClick={onPrev}
           >
-            ← Back
+            {prevLabel}
           </button>
 
           <div style={styles.dotsContainer}>
@@ -170,7 +185,7 @@ function TourTooltipComponent(
                   ...styles.dot,
                   ...(index === currentStep ? styles.dotActive : styles.dotInactive),
                 }}
-                aria-label={`Go to step ${index + 1}`}
+                aria-label={dotAriaLabelTemplate.replace('{step}', String(index + 1))}
                 onClick={() => {
                   onGoToStep(index);
                 }}
@@ -179,7 +194,7 @@ function TourTooltipComponent(
           </div>
 
           <button type="button" style={styles.nextButton} onClick={onNext}>
-            {isLastStep ? 'Finish' : 'Next →'}
+            {isLastStep ? finishLabel : nextLabel}
           </button>
         </div>
       </div>

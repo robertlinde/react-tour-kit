@@ -4,15 +4,36 @@ import {type TourTooltipProps} from '../../shared';
 
 const {View, Text, TouchableOpacity, StyleSheet} = require('react-native') as typeof import('react-native');
 
+const defaultI18n = {
+  nextLabel: 'Next',
+  prevLabel: 'Back',
+  finishLabel: 'Done',
+  stepCounterTemplate: 'Step {current} of {total}',
+};
+
 /**
  * Default tooltip component for React Native.
  * Displays tour step content with navigation controls.
  */
 // eslint-disable-next-line func-names -- forwardRef requires named function for display name
 export const TourTooltip = forwardRef(function TourTooltip(
-  {title, content, currentStep, totalSteps, position, isPositioned, onClose, onNext, onPrev, theme}: TourTooltipProps,
+  {
+    title,
+    content,
+    currentStep,
+    totalSteps,
+    position,
+    isPositioned,
+    onClose,
+    onNext,
+    onPrev,
+    theme,
+    i18n,
+  }: TourTooltipProps,
   ref: ForwardedRef<ViewType>,
 ): ReactNode {
+  const {nextLabel, prevLabel, finishLabel, stepCounterTemplate} = {...defaultI18n, ...i18n};
+
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
 
@@ -68,7 +89,7 @@ export const TourTooltip = forwardRef(function TourTooltip(
       <View style={styles.header}>
         <View style={[styles.stepBadge, themedStyles.stepBadge]}>
           <Text style={styles.stepBadgeText}>
-            Step {currentStep + 1} of {totalSteps}
+            {stepCounterTemplate.replace('{current}', String(currentStep + 1)).replace('{total}', String(totalSteps))}
           </Text>
         </View>
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -89,7 +110,7 @@ export const TourTooltip = forwardRef(function TourTooltip(
           style={[styles.navButton, styles.prevButton, isFirstStep && styles.buttonDisabled]}
           onPress={onPrev}
         >
-          <Text style={[styles.prevButtonText, isFirstStep && styles.buttonTextDisabled]}>Back</Text>
+          <Text style={[styles.prevButtonText, isFirstStep && styles.buttonTextDisabled]}>{prevLabel}</Text>
         </TouchableOpacity>
 
         {/* Step dots */}
@@ -100,7 +121,7 @@ export const TourTooltip = forwardRef(function TourTooltip(
         </View>
 
         <TouchableOpacity style={[styles.navButton, themedStyles.nextButton]} onPress={onNext}>
-          <Text style={styles.nextButtonText}>{isLastStep ? 'Done' : 'Next'}</Text>
+          <Text style={styles.nextButtonText}>{isLastStep ? finishLabel : nextLabel}</Text>
         </TouchableOpacity>
       </View>
     </View>

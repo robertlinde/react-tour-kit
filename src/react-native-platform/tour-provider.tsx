@@ -28,6 +28,7 @@ export function TourProvider({
   onTourEnd,
   theme,
   platform = nativePlatformAdapter,
+  i18n,
 }: TourProviderProps): JSX.Element {
   const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
   const [isActive, setIsActive] = useState(false);
@@ -273,6 +274,7 @@ export function TourProvider({
                 ref={tooltipRef}
                 content={currentTourStep.content}
                 currentStep={currentStep}
+                i18n={i18n}
                 isPositioned={isPositioned}
                 position={tooltipPosition}
                 theme={resolvedTheme}

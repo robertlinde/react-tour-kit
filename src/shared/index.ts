@@ -11,6 +11,7 @@ export type {
   TourContextType,
   TourOverlayProps,
   TourTooltipProps,
+  TourI18n,
 } from './types';
 
 export {defaultTheme, resolveTheme} from './types';
