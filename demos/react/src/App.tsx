@@ -1,7 +1,7 @@
 import React from 'react';
 import {BrowserRouter, Routes, Route, Link, useNavigate} from 'react-router-dom';
 import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
-import './app.css';
+import './App.css';
 
 // Tour steps that span multiple pages
 const createTourSteps = (navigate: (path: string) => void): TourStep[] => [
@@ -128,7 +128,7 @@ function HomePage(): React.JSX.Element {
 
         <section className="install-section">
           <h2>Installation</h2>
-          <code className="install-code">npm install react-tour-kit</code>
+          <code className="install-code">npm i @robertlinde/react-tour-kit</code>
         </section>
       </main>
     </div>

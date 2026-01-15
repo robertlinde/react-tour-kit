@@ -27,6 +27,11 @@ yarn-error.log*
 # Coverage
 coverage
 
+# Playwright
+test-results
+playwright-report
+blob-report
+
 # Demo
 demo/node_modules
 demo/.next
