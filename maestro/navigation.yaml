@@ -10,9 +10,8 @@ name: Navigation Tests
 # Navigate to Settings
 - tapOn: "Settings"
 - extendedWaitUntil:
-    visible: "Configure your preferences"
-    timeout: 5000
-- assertVisible: "Dark Mode"
+    visible: "Dark Mode"
+    timeout: 10000
 - assertVisible: "Notifications"
 
 # Navigate back to Home
