@@ -1,0 +1,56 @@
+appId: host.exp.exponent
+name: Tour Flow Tests
+---
+
+# Verify app loads
+- assertVisible: "react-tour-kit"
+- assertVisible: "Home"
+- assertVisible: "Settings"
+
+# Verify feature cards
+- assertVisible: "Easy to Use"
+- assertVisible: "Customizable"
+- assertVisible: "Cross-Platform"
+
+# Scroll to CTA button
+- scroll
+- assertVisible: "Start Cross-Screen Tour"
+
+# Start tour - Step 1
+- tapOn: "Start Cross-Screen Tour"
+- assertVisible: "Welcome to React Tour!"
+- assertVisible: "Next"
+
+# Step 2 - Navigation
+- tapOn: "Next"
+- assertVisible: "Navigation"
+
+# Step 3 - Easy to Use
+- tapOn: "Next"
+- assertVisible: "Easy to Use"
+
+# Step 4 - Navigate to Settings
+- tapOn: "Next"
+- assertVisible: "Let's Visit Settings"
+
+# Step 5 - Settings Screen
+- tapOn: "Next"
+- assertVisible: "Settings Screen"
+
+# Step 6 - Theme Settings
+- tapOn: "Next"
+- assertVisible: "Theme Settings"
+
+# Step 7 - Back to Home
+- tapOn: "Next"
+- assertVisible: "Back to Home"
+
+# Step 8 - Final step
+- tapOn: "Next"
+- assertVisible: "That's It!"
+- assertVisible: "Done"
+
+# Close tour
+- tapOn: "×"
+- assertVisible: "Home"
+- assertVisible: "Settings"

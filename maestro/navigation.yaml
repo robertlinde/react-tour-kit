@@ -1,0 +1,17 @@
+appId: host.exp.exponent
+name: Navigation Tests
+---
+
+# Verify app loads
+- assertVisible: "react-tour-kit"
+
+# Navigate to Settings
+- tapOn: "Settings"
+- assertVisible: "Configure your preferences"
+- assertVisible: "Dark Mode"
+- assertVisible: "Notifications"
+
+# Navigate back to Home
+- tapOn: "Home"
+- assertVisible: "react-tour-kit"
+- assertVisible: "Features"

@@ -189,7 +189,7 @@ function HomeScreen(): React.JSX.Element {
           <View style={styles.installSection}>
             <Text style={styles.installTitle}>Installation</Text>
             <View style={styles.installCode}>
-              <Text style={styles.installCodeText}>npm install react-tour-kit</Text>
+              <Text style={styles.installCodeText}>npm i @robertlinde/react-tour-kit</Text>
             </View>
           </View>
         </View>

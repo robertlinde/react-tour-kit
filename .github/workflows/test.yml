@@ -4,9 +4,9 @@ on:
   pull_request:
 
 jobs:
-  # -------- E2E Tests --------
-  e2e:
-    name: E2E Tests
+  # -------- E2E Tests (React) --------
+  e2e-react:
+    name: E2E Tests (React)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -28,7 +28,7 @@ jobs:
         run: npx playwright install chromium --with-deps
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e:react
 
       - name: Upload test results
         if: ${{ !cancelled() }}
@@ -38,5 +38,66 @@ jobs:
           path: |
             blob-report/
             playwright-report/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # -------- E2E Tests (React Native) --------
+  e2e-react-native:
+    name: E2E Tests (React Native)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.13.0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix demos/react-native
+
+      - name: Install Maestro
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Start Android Emulator and run tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 31
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            cd demos/react-native
+            npx expo start --android --no-dev --minify &
+            sleep 90
+            cd ../..
+            npm run test:e2e:react-native
+
+      - name: Upload Maestro logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: maestro-logs
+          path: ~/.maestro/logs/
           retention-days: 30
           if-no-files-found: ignore

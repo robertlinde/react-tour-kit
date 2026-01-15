@@ -1,0 +1,7 @@
+# Maestro configuration for React Native E2E tests
+appId: host.exp.exponent
+name: react-tour-kit-rn-tests
+
+flows:
+  - navigation.yaml
+  - tour.yaml

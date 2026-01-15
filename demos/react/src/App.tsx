@@ -128,7 +128,7 @@ function HomePage(): React.JSX.Element {
 
         <section className="install-section">
           <h2>Installation</h2>
-          <code className="install-code">npm install react-tour-kit</code>
+          <code className="install-code">npm i @robertlinde/react-tour-kit</code>
         </section>
       </main>
     </div>
