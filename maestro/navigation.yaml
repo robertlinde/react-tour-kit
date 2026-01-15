@@ -2,8 +2,11 @@ appId: host.exp.Exponent
 name: Navigation Tests
 ---
 
-# Verify app loads
-- assertVisible: "react-tour-kit"
+# Launch and wait for app
+- launchApp
+- extendedWaitUntil:
+    visible: "react-tour-kit"
+    timeout: 30000
 
 # Navigate to Settings
 - tapOn: "Settings"

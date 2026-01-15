@@ -2,12 +2,15 @@ appId: host.exp.Exponent
 name: Tour Flow Tests
 ---
 
-# Verify app loads
-- assertVisible: "react-tour-kit"
+# Launch and wait for app
+- launchApp
+- extendedWaitUntil:
+    visible: "react-tour-kit"
+    timeout: 30000
+
+# Verify UI elements
 - assertVisible: "Home"
 - assertVisible: "Settings"
-
-# Verify feature cards
 - assertVisible: "Easy to Use"
 - assertVisible: "Customizable"
 - assertVisible: "Cross-Platform"
