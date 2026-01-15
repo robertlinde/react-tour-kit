@@ -1,5 +1,8 @@
 # Maestro configuration for React Native E2E tests
-appId: host.exp.exponent
+# Note: appId differs by platform
+# - iOS: host.exp.exponent
+# - Android: host.exp.Exponent
+appId: host.exp.Exponent
 name: react-tour-kit-rn-tests
 
 flows:

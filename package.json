@@ -19,8 +19,8 @@
     "lint:fix": "xo --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:e2e:react": "playwright test --config=e2e/playwright.config.ts",
-    "test:e2e:react:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:e2e:react": "playwright test --config=playwright/playwright.config.ts",
+    "test:e2e:react:ui": "playwright test --config=playwright/playwright.config.ts --ui",
     "test:e2e:react-native": "maestro test maestro/",
     "prepublishOnly": "npm run build",
     "prepare": "husky || true"

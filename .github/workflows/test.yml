@@ -87,11 +87,17 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            cd demos/react-native
-            npx expo start --android --no-dev --minify &
-            sleep 90
-            cd ../..
-            npm run test:e2e:react-native
+            # Start Expo in the background
+            cd demos/react-native && npx expo start --android --no-dev --minify &
+            EXPO_PID=$!
+
+            # Wait for Expo to bundle and install on device
+            echo "Waiting for Expo to start..."
+            sleep 120
+
+            # Run Maestro tests
+            cd $GITHUB_WORKSPACE
+            maestro test maestro/
 
       - name: Upload Maestro logs
         if: ${{ !cancelled() }}
