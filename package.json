@@ -21,7 +21,6 @@
     "format:check": "prettier --check .",
     "test:e2e:react": "playwright test --config=playwright/playwright.config.ts",
     "test:e2e:react:ui": "playwright test --config=playwright/playwright.config.ts --ui",
-    "test:e2e:react-native": "maestro test maestro/",
     "prepublishOnly": "npm run build",
     "prepare": "husky || true"
   },
