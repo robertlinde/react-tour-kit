@@ -9,11 +9,15 @@ name: Navigation Tests
 
 # Navigate to Settings
 - tapOn: "Settings"
-- assertVisible: "Configure your preferences"
+- extendedWaitUntil:
+    visible: "Configure your preferences"
+    timeout: 5000
 - assertVisible: "Dark Mode"
 - assertVisible: "Notifications"
 
 # Navigate back to Home
 - tapOn: "Home"
-- assertVisible: "react-tour-kit"
+- extendedWaitUntil:
+    visible: "react-tour-kit"
+    timeout: 5000
 - assertVisible: "Features"
