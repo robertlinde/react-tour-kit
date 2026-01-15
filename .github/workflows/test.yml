@@ -45,6 +45,7 @@ jobs:
   e2e-react-native:
     name: E2E Tests (React Native)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:

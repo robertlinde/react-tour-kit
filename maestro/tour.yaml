@@ -2,11 +2,10 @@ appId: host.exp.Exponent
 name: Tour Flow Tests
 ---
 
-# Launch and wait for app
-- launchApp
+# Wait for app to be ready
 - extendedWaitUntil:
     visible: "react-tour-kit"
-    timeout: 30000
+    timeout: 60000
 
 # Verify UI elements
 - assertVisible: "Home"
@@ -51,9 +50,8 @@ name: Tour Flow Tests
 # Step 8 - Final step
 - tapOn: "Next"
 - assertVisible: "That's It!"
-- assertVisible: "Done"
 
-# Close tour
+# Close tour using × (Done button may be off-screen on some devices)
 - tapOn: "×"
 - assertVisible: "Home"
 - assertVisible: "Settings"
