@@ -19,6 +19,8 @@
     "lint:fix": "xo --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "test:e2e": "playwright test --config=e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config=e2e/playwright.config.ts --ui",
     "prepublishOnly": "npm run build",
     "prepare": "husky || true"
   },
@@ -59,6 +61,8 @@
   "devDependencies": {
     "@commitlint/cli": "20.3.1",
     "@commitlint/config-conventional": "20.3.1",
+    "@estruyf/github-actions-reporter": "^1.10.0",
+    "@playwright/test": "^1.57.0",
     "@types/react": "19.2.8",
     "@types/react-dom": "19.2.3",
     "@types/react-native": "0.73.0",

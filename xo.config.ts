@@ -110,6 +110,47 @@ const xoConfig: FlatXoConfig = [
 			'n/file-extension-in-import': 'off',
 		},
 	},
+	// E2E test files - Playwright tests
+	{
+		files: ['e2e/**/*.ts'],
+		prettier: true,
+		space: true,
+		semicolon: true,
+		rules: {
+			// Disable stylistic rules
+			'@stylistic/indent': 'off',
+			'@stylistic/object-curly-newline': 'off',
+			'@stylistic/no-mixed-operators': 'off',
+			'no-mixed-operators': 'off',
+
+			// Playwright test functions are typed properly but xo doesn't understand them
+			'@typescript-eslint/no-unsafe-call': 'off',
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-unsafe-member-access': 'off',
+			'@typescript-eslint/no-unsafe-argument': 'off',
+
+			// Test files don't need explicit return types
+			'@typescript-eslint/explicit-function-return-type': 'off',
+
+			// Allow naming conventions for Playwright config
+			'@typescript-eslint/naming-convention': 'off',
+
+			// Allow process.env in config
+			'n/prefer-global/process': 'off',
+
+			// Disable comment rules
+			'@typescript-eslint/capitalized-comments': 'off',
+			'capitalized-comments': 'off',
+			'unicorn/prevent-abbreviations': 'off',
+
+			// Sequential awaits are intentional in e2e tests
+			'no-await-in-loop': 'off',
+
+			// Import rules
+			'import-x/extensions': 'off',
+			'n/file-extension-in-import': 'off',
+		},
+	},
 	// Xo.config.ts itself
 	{
 		files: ['xo.config.ts'],
