@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@robertlinde/react-tour-kit": "0.5.2",
+    "@robertlinde/react-tour-kit": "0.5.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-router-dom": "7.12.0"
