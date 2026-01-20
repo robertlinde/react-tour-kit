@@ -20,7 +20,7 @@
     "react-native-screens": "4.20.0"
   },
   "devDependencies": {
-    "@types/react": "19.2.8",
+    "@types/react": "19.2.9",
     "typescript": "5.9.3"
   }
 }
