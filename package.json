@@ -69,8 +69,8 @@
     "husky": "9.1.7",
     "lint-staged": "16.2.7",
     "prettier": "3.8.1",
-    "react": "19.2.3",
-    "react-dom": "19.2.3",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "typescript": "5.9.3",
     "xo": "1.2.3"
   },
@@ -87,6 +87,6 @@
     "product-tour"
   ],
   "engines": {
-    "node": "25.4.0"
+    "node": "25.5.0"
   }
 }
