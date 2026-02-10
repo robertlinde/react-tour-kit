@@ -87,6 +87,6 @@
     "product-tour"
   ],
   "engines": {
-    "node": "25.6.0"
+    "node": "25.6.1"
   }
 }
