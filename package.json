@@ -67,7 +67,7 @@
     "@types/react-dom": "19.2.3",
     "@types/react-native": "0.73.0",
     "husky": "9.1.7",
-    "lint-staged": "16.3.2",
+    "lint-staged": "16.3.3",
     "prettier": "3.8.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
