@@ -5,6 +5,10 @@
   "labels": ["renovate"],
   "packageRules": [
     {
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
       "matchDepTypes": ["peerDependencies"],
       "rangeStrategy": "widen"
     },
