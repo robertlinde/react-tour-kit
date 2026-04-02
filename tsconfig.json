@@ -10,7 +10,6 @@
     "allowSyntheticDefaultImports": true,
     "removeComments": true,
     "sourceMap": true,
-    "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
