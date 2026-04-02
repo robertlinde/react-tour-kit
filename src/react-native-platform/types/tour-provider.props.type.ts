@@ -5,7 +5,7 @@ import {
   type TourOverlayProps,
   type TourTheme,
   type TourTooltipProps,
-} from 'src/shared';
+} from '../../shared';
 
 export type TourProviderProps = {
   readonly children: ReactNode;

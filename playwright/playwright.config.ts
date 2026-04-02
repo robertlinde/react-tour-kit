@@ -8,6 +8,9 @@ import {defineConfig, devices} from '@playwright/test';
  *
  * @see https://playwright.dev/docs/test-configuration
  */
+// eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+const isCI = Boolean(process.env.CI);
+
 export default defineConfig({
   testDir: '.',
   /* Only run .spec.ts files */
@@ -16,7 +19,7 @@ export default defineConfig({
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
 
-  forbidOnly: Boolean(process.env.CI),
+  forbidOnly: isCI,
   /* Retry on CI only - helps with flakiness */
 
   retries: process.env.CI ? 2 : 0,

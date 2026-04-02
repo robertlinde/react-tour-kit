@@ -14,6 +14,7 @@ const xoConfig: FlatXoConfig = [
 			// Disable stylistic rules - let prettier handle formatting
 			'@stylistic/indent': 'off',
 			'@stylistic/object-curly-newline': 'off',
+			'@stylistic/curly-newline': 'off',
 			'@stylistic/no-mixed-operators': 'off',
 			'no-mixed-operators': 'off',
 
@@ -70,6 +71,9 @@ const xoConfig: FlatXoConfig = [
 			'@typescript-eslint/no-require-imports': 'off',
 			'@typescript-eslint/no-var-requires': 'off',
 			'@typescript-eslint/consistent-type-imports': 'off',
+			// Type assertions are needed for `require('react-native') as typeof import(...)` pattern
+			// and for RN measure API which uses untyped refs
+			'@typescript-eslint/no-unsafe-type-assertion': 'off',
 			// RN measure callback has 6 params
 			'max-params': 'off',
 			// Allow unused params prefixed with underscore (for interface compliance)

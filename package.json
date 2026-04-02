@@ -1,6 +1,7 @@
 {
   "name": "@robertlinde/react-tour-kit",
-  "version": "0.4.0",
+  "version": "0.5.8",
+  "type": "module",
   "description": "Cross-platform guided tour library for React and React Native. Build interactive onboarding experiences with customizable tooltips, smart positioning, cross-page navigation, and async step actions. Fully themeable with TypeScript support.",
   "author": "Robert Linde",
   "license": "MIT",
@@ -71,8 +72,8 @@
     "prettier": "3.8.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "typescript": "5.9.3",
-    "xo": "1.2.3"
+    "typescript": "6.0.2",
+    "xo": "2.0.2"
   },
   "keywords": [
     "react",
@@ -87,6 +88,6 @@
     "product-tour"
   ],
   "engines": {
-    "node": "25.9.0"
+    "node": ">=20.0.0"
   }
 }

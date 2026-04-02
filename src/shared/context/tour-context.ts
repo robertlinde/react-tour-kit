@@ -27,4 +27,4 @@ export const defaultTourContext: TourContextType = {
  * Shared between web and React Native implementations.
  */
 
-export const TourContext = createContext<TourContextType>(defaultTourContext);
+export const TourContext = createContext(defaultTourContext);
