@@ -24,6 +24,9 @@ jobs:
           npm ci
           npm ci --prefix demos/react
 
+      - name: Build root package
+        run: npm run build
+
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
