@@ -122,7 +122,6 @@ function HomePage(): React.JSX.Element {
 
         <section className="cta-section">
           <button type="button" className="cta-button" data-tour="cta" onClick={handleStartTour}>
-            {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
             {isActive ? `Step ${currentStep + 1} of ${steps.length}` : 'Start Cross-Page Tour'}
           </button>
         </section>

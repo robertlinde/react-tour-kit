@@ -182,7 +182,6 @@ function HomeScreen(): React.JSX.Element {
 
           <TouchableOpacity ref={ctaRef} style={styles.ctaButton} onPress={handleStartTour}>
             <Text style={styles.ctaButtonText}>
-              {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access */}
               {isActive ? `Step ${currentStep + 1} of ${steps.length}` : 'Start Cross-Screen Tour'}
             </Text>
           </TouchableOpacity>
