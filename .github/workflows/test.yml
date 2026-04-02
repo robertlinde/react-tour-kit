@@ -19,13 +19,13 @@ jobs:
         with:
           node-version: 24.14.1
 
-      - name: Install dependencies
+      - name: Install and build root package
         run: |
           npm ci
-          npm ci --prefix demos/react
+          npm run build
 
-      - name: Build root package
-        run: npm run build
+      - name: Install demo dependencies
+        run: npm ci --prefix demos/react
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
