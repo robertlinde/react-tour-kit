@@ -23,7 +23,7 @@ test.describe('Tour', () => {
       await startButton.click();
 
       // Tour tooltip should appear - look for the step counter text pattern "1 / 8"
-      const tooltip = page.getByText(/\d+\s*\/\s*\d+/).first();
+      const tooltip = page.getByText(/\d+\s*\/\s*\d+/v).first();
       await expect(tooltip).toBeVisible({timeout: 5000});
     });
   });
@@ -93,7 +93,7 @@ test.describe('Tour', () => {
       // Step 4: Let's Visit Settings - this triggers navigation
 
       // Wait for navigation to settings page
-      await expect(page).toHaveURL(/\/settings/, {timeout: 10_000});
+      await expect(page).toHaveURL(/\/settings/v, {timeout: 10_000});
 
       // Tour should continue on settings page
       await expect(page.getByText('Settings Page')).toBeVisible({timeout: 5000});
@@ -111,7 +111,7 @@ test.describe('Tour', () => {
         await page.waitForTimeout(100);
       }
 
-      await expect(page).toHaveURL(/\/settings/, {timeout: 10_000});
+      await expect(page).toHaveURL(/\/settings/v, {timeout: 10_000});
 
       // Continue through settings steps
       // Step 5: Settings Page -> Step 6
@@ -183,11 +183,11 @@ test.describe('Tour', () => {
 
       // Button should show step progress
       const ctaButton = page.locator('[data-tour="cta"]');
-      await expect(ctaButton).toContainText(/Step 1 of \d+/);
+      await expect(ctaButton).toContainText(/Step 1 of \d+/v);
 
       // Advance to next step
       await page.getByRole('button', {name: 'Next'}).click();
-      await expect(ctaButton).toContainText(/Step 2 of \d+/);
+      await expect(ctaButton).toContainText(/Step 2 of \d+/v);
     });
   });
 });
@@ -198,7 +198,7 @@ test.describe('Navigation', () => {
 
     // Click settings link
     await page.locator('[data-tour="nav-settings"]').click();
-    await expect(page).toHaveURL(/\/settings/);
+    await expect(page).toHaveURL(/\/settings/v);
 
     // Click home link
     await page.locator('[data-tour="nav-home"]').click();

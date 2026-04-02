@@ -23,6 +23,7 @@ export const webPlatformAdapter: PlatformAdapter = {
   async measureElement(target: TourTarget): Promise<Rect | undefined> {
     if (typeof target !== 'string') {
       // Web primarily uses string selectors, but can support refs too
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- TourTarget uses RefObject<unknown> for cross-platform compat
       const element = (target as RefObject<Element>).current;
       if (!element) {
         return undefined;
@@ -40,6 +41,7 @@ export const webPlatformAdapter: PlatformAdapter = {
   },
 
   measureTooltip(ref: RefObject<unknown>): {width: number; height: number} {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- ref.current is always HTMLElement on web
     const element = ref.current as HTMLElement | undefined;
     return {
       width: element?.offsetWidth ?? 0,
@@ -55,6 +57,7 @@ export const webPlatformAdapter: PlatformAdapter = {
   },
 
   async scrollToElement(target: TourTarget, placement?: Placement, tooltipHeight?: number): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- TourTarget uses RefObject<unknown> for cross-platform compat
     const element = typeof target === 'string' ? findVisibleElement(target) : (target as RefObject<Element>).current;
 
     if (element) {
@@ -128,6 +131,7 @@ export const webPlatformAdapter: PlatformAdapter = {
       return findVisibleElement(target);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- TourTarget uses RefObject<unknown> for cross-platform compat
     return (target as RefObject<Element>).current ?? undefined;
   },
 };

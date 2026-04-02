@@ -35,7 +35,7 @@ export function TourProvider({
   const [currentStep, setCurrentStep] = useState(0);
   const [steps, setSteps] = useState<TourStep[]>([]);
   const [currentTourId, setCurrentTourId] = useState<string | undefined>(undefined);
-  const [tooltipPosition, setTooltipPosition] = useState<{top: number; left: number}>({top: 0, left: 0});
+  const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0});
   const [isPositioned, setIsPositioned] = useState(false);
   const [highlightRect, setHighlightRect] = useState<Rect | undefined>(undefined);
   const tooltipRef = useRef<HTMLDivElement>(null);
