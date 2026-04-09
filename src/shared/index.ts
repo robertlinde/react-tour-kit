@@ -12,6 +12,10 @@ export type {
   TourOverlayProps,
   TourTooltipProps,
   TourI18n,
+  TourEndReason,
+  TourEndInfo,
+  TourEndCallback,
+  StartTourOptions,
 } from './types';
 
 export {defaultTheme, resolveTheme} from './types';

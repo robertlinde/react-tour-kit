@@ -11,6 +11,7 @@ Cross-platform guided tour library for React and React Native. Build interactive
 - **Smart Positioning**: Automatic tooltip positioning with viewport boundary detection
 - **Keyboard Navigation**: Arrow keys and Escape (web) or hardware back button (Android)
 - **Async Step Actions**: Run async code before each step (e.g., navigate, switch tabs, open dialogs)
+- **Rich End Callbacks**: Know _why_ a tour ended (`completed`, `closed`, `blur`, `escape`, `target-missing`) with global and per-tour handlers
 - **TypeScript First**: Full TypeScript support
 
 ## Installation
@@ -396,9 +397,10 @@ import {TourProvider} from '@robertlinde/react-tour-kit/react';
   TooltipComponent={CustomTooltip} // Optional: custom tooltip component
   OverlayComponent={CustomOverlay} // Optional: custom overlay component
   theme={theme} // Optional: theme configuration
-  onTourEnd={(tourId) => {
+  onTourEnd={(tourId, info) => {
     // Optional: callback when tour ends
-    console.log(`Tour ${tourId} completed`);
+    // info.reason is one of: 'completed' | 'closed' | 'blur' | 'escape' | 'target-missing'
+    console.log(`Tour ${tourId} ended: ${info.reason} at step ${info.stepIndex + 1}/${info.totalSteps}`);
   }}
 >
   {children}
@@ -407,14 +409,14 @@ import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 #### Props
 
-| Prop               | Type                                          | Description                                                |
-| ------------------ | --------------------------------------------- | ---------------------------------------------------------- |
-| `children`         | `ReactNode`                                   | Your application content                                   |
-| `theme`            | `TourTheme`                                   | Theme configuration for colors (see Theming section)       |
-| `i18n`             | `TourI18n`                                    | Internationalization options for labels (see i18n section) |
-| `TooltipComponent` | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)             |
-| `OverlayComponent` | `ComponentType<TourOverlayProps>`             | Custom overlay component                                   |
-| `onTourEnd`        | `(tourId: string \| null) => void`            | Callback fired when tour ends (completed or closed)        |
+| Prop               | Type                                          | Description                                                                                                                                   |
+| ------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `children`         | `ReactNode`                                   | Your application content                                                                                                                      |
+| `theme`            | `TourTheme`                                   | Theme configuration for colors (see Theming section)                                                                                          |
+| `i18n`             | `TourI18n`                                    | Internationalization options for labels (see i18n section)                                                                                    |
+| `TooltipComponent` | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)                                                                                                |
+| `OverlayComponent` | `ComponentType<TourOverlayProps>`             | Custom overlay component                                                                                                                      |
+| `onTourEnd`        | `TourEndCallback`                             | Callback fired when any tour ends. Receives `(tourId, info)` with the reason and step context (see [Tour End Callbacks](#tour-end-callbacks)) |
 
 ### useTour Hook
 
@@ -429,7 +431,7 @@ function MyComponent() {
     currentStep, // number: current step index (0-based)
     steps, // TourStep[]: all steps in current tour
     currentTourId, // string | null: ID of current tour
-    startTour, // (steps: TourStep[], tourId?: string) => void
+    startTour, // (steps: TourStep[], tourId?: string, options?: StartTourOptions) => void
     endTour, // () => void
     nextStep, // () => void
     prevStep, // () => void
@@ -455,6 +457,113 @@ type TourStep = {
 // Web: CSS selector string (e.g., '[data-tour="welcome"]', '#my-button')
 // React Native: String ID (registered via useTourTarget) or RefObject
 type TourTarget = string | RefObject<unknown>;
+```
+
+### Tour End Callbacks
+
+Tours can end in several ways, and callbacks receive context about **why** and **where**. You can register an end handler at two levels: globally on the provider, or per-tour via `startTour`.
+
+#### Callback signature
+
+```tsx
+type TourEndReason =
+  | 'completed' // User clicked Finish on the last step
+  | 'closed' // User clicked the close (✕) button, or `endTour()` was called programmatically
+  | 'blur' // User clicked/tapped the overlay outside the highlighted element
+  | 'escape' // User pressed Escape (web only)
+  | 'target-missing'; // The step's target element could not be found and the tour had to end
+
+type TourEndInfo = {
+  reason: TourEndReason;
+  stepIndex: number; // Zero-based index of the step the user was on
+  step: TourStep; // The step object the user was on
+  totalSteps: number; // Total number of steps in the tour
+};
+
+type TourEndCallback = (tourId: string | undefined, info: TourEndInfo) => void;
+```
+
+> **Note (React Native):** the `'escape'` reason only fires on web. On Android, the hardware back button is reported as `'closed'`.
+
+#### Provider-level callback
+
+Use the provider-level `onTourEnd` for cross-cutting concerns that should run for every tour — analytics, logging, etc.
+
+```tsx
+<TourProvider
+  onTourEnd={(tourId, info) => {
+    analytics.track('tour_ended', {
+      tourId,
+      reason: info.reason,
+      lastStep: info.stepIndex + 1,
+      totalSteps: info.totalSteps,
+    });
+  }}
+>
+  <App />
+</TourProvider>
+```
+
+#### Per-tour callback
+
+Pass an `onTourEnd` in the options argument to `startTour` when you need tour-specific end logic. This keeps the logic colocated with the tour that owns it, instead of dispatching on `tourId` in the provider callback.
+
+```tsx
+function WelcomeButton() {
+  const {startTour} = useTour();
+
+  const handleStart = () => {
+    startTour(onboardingSteps, 'onboarding', {
+      onTourEnd: (tourId, info) => {
+        if (info.reason === 'completed') {
+          markOnboardingComplete();
+        }
+      },
+    });
+  };
+
+  return <button onClick={handleStart}>Start Onboarding</button>;
+}
+```
+
+#### Precedence
+
+When both a provider-level and a per-tour callback are defined, **the per-tour callback fires first**, then the provider-level callback. Both always run on every end — the per-tour callback does not suppress the provider-level one.
+
+```tsx
+// Provider:
+onTourEnd = (id, info) => console.log('provider', id, info.reason);
+
+// Tour:
+startTour(steps, 'onboarding', {
+  onTourEnd: (id, info) => console.log('tour', id, info.reason),
+});
+
+// On end, logs in order:
+// 'tour'     'onboarding' 'completed'
+// 'provider' 'onboarding' 'completed'
+```
+
+#### Reacting to specific reasons
+
+Branch on `info.reason` to distinguish outcomes:
+
+```tsx
+onTourEnd={(tourId, info) => {
+  switch (info.reason) {
+    case 'completed':
+      markComplete(tourId);
+      break;
+    case 'blur':
+    case 'closed':
+    case 'escape':
+      trackDismissal(tourId, info.reason, info.stepIndex);
+      break;
+    case 'target-missing':
+      reportBug(`Tour ${tourId} broke at step ${info.stepIndex}: ${info.step.target}`);
+      break;
+  }
+}}
 ```
 
 ## Theming
@@ -821,14 +930,14 @@ function App() {
 
 ### Persisting Tour Completion
 
-Track which tours users have completed:
+Track which tours users have fully completed. Only persist on `'completed'` so dismissed or interrupted tours aren't marked done.
 
 ```tsx
-import {TourProvider} from '@robertlinde/react-tour-kit/react';
+import {TourProvider, type TourEndCallback} from '@robertlinde/react-tour-kit/react';
 
 function App() {
-  const handleTourEnd = async (tourId: string | null) => {
-    if (tourId) {
+  const handleTourEnd: TourEndCallback = async (tourId, info) => {
+    if (tourId && info.reason === 'completed') {
       // Save to your backend
       await fetch('/api/users/me/completed-tours/' + tourId, {
         method: 'POST',
@@ -843,6 +952,8 @@ function App() {
   );
 }
 ```
+
+See [Tour End Callbacks](#tour-end-callbacks) for the full list of end reasons and how to register per-tour end handlers.
 
 ### Conditional Tour Start
 
@@ -899,6 +1010,10 @@ import type {
   TourOverlayProps,
   TourTheme,
   TourI18n,
+  TourEndCallback,
+  TourEndInfo,
+  TourEndReason,
+  StartTourOptions,
 } from '@robertlinde/react-tour-kit/react';
 ```
 

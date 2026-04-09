@@ -12,7 +12,18 @@ export {TourContext, useTour} from './shared';
 export {TourOverlay, TourTooltip} from './react-platform';
 
 // Types
-export type {TourStep, TourContextType, TourTooltipProps, TourOverlayProps, TourTheme, TourI18n} from './shared';
+export type {
+  TourStep,
+  TourContextType,
+  TourTooltipProps,
+  TourOverlayProps,
+  TourTheme,
+  TourI18n,
+  TourEndReason,
+  TourEndInfo,
+  TourEndCallback,
+  StartTourOptions,
+} from './shared';
 
 // Platform types
 export type {Rect, TourTarget} from './shared';

@@ -1,3 +1,4 @@
+import {type StartTourOptions} from './tour-end-info.type';
 import {type TourStep} from './tour-step.type';
 
 export type TourContextType = {
@@ -5,7 +6,7 @@ export type TourContextType = {
   currentStep: number;
   steps: TourStep[];
   currentTourId: string | undefined;
-  startTour: (steps: TourStep[], tourId?: string) => void;
+  startTour: (steps: TourStep[], tourId?: string, options?: StartTourOptions) => void;
   endTour: () => void;
   nextStep: () => void;
   prevStep: () => void;

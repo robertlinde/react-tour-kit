@@ -1,6 +1,7 @@
 import {type ComponentType, type ForwardRefExoticComponent, type ReactNode, type RefAttributes} from 'react';
 import {
   type PlatformAdapter,
+  type TourEndCallback,
   type TourI18n,
   type TourOverlayProps,
   type TourTheme,
@@ -20,9 +21,15 @@ export type TourProviderProps = {
   readonly OverlayComponent?: ComponentType<TourOverlayProps>;
   /**
    * Callback fired when a tour ends (whether completed or closed early).
-   * Useful for persisting tour completion status.
+   * The second argument provides the reason the tour ended (`completed`, `closed`, `blur`,
+   * `escape`, or `target-missing`) along with the step the user was on.
+   *
+   * If the tour was started with a per-tour `onTourEnd` option, that callback fires first,
+   * then this provider-level callback.
+   *
+   * Useful for persisting tour completion status or logging analytics.
    */
-  readonly onTourEnd?: (tourId: string | undefined) => void;
+  readonly onTourEnd?: TourEndCallback;
   /**
    * Theme configuration for customizing tooltip and overlay appearance.
    */
