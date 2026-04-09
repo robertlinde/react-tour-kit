@@ -4,6 +4,10 @@ import {
   type TourStep,
   type TourContextType,
   type Rect,
+  type StartTourOptions,
+  type TourEndCallback,
+  type TourEndInfo,
+  type TourEndReason,
   TourContext,
   calculateTooltipPosition,
   resolveTheme,
@@ -40,40 +44,65 @@ export function TourProvider({
   const [highlightRect, setHighlightRect] = useState<Rect | undefined>(undefined);
   const tooltipRef = useRef<ViewType>(null);
   const [positionKey, setPositionKey] = useState(0);
+  const tourOnEndRef = useRef<TourEndCallback | undefined>(undefined);
 
   const Tooltip = TooltipComponent ?? DefaultTourTooltip;
   const Overlay = OverlayComponent ?? DefaultTourOverlay;
 
-  const startTour = useCallback((tourSteps: TourStep[], tourId?: string): void => {
+  const startTour = useCallback((tourSteps: TourStep[], tourId?: string, options?: StartTourOptions): void => {
     if (tourSteps.length > 0) {
       setSteps(tourSteps);
       setCurrentStep(0);
       setCurrentTourId(tourId);
+      tourOnEndRef.current = options?.onTourEnd;
       setIsActive(true);
     }
   }, []);
 
-  const endTour = useCallback((): void => {
-    if (onTourEnd) {
-      onTourEnd(currentTourId);
-    }
+  const finishTour = useCallback(
+    (reason: TourEndReason): void => {
+      // Snapshot step info BEFORE resetting state so callbacks see accurate values.
+      const stepAtEnd = steps[currentStep] ?? steps.at(-1);
 
-    setIsActive(false);
-    setCurrentStep(0);
-    setSteps([]);
-    setCurrentTourId(undefined);
-    setHighlightRect(undefined);
-    setTooltipPosition({top: 0, left: 0});
-    setIsPositioned(false);
-  }, [currentTourId, onTourEnd]);
+      if (stepAtEnd) {
+        const info: TourEndInfo = {
+          reason,
+          stepIndex: currentStep,
+          step: stepAtEnd,
+          totalSteps: steps.length,
+        };
+
+        // Tour-level fires first, provider-level second.
+        tourOnEndRef.current?.(currentTourId, info);
+        onTourEnd?.(currentTourId, info);
+      }
+
+      tourOnEndRef.current = undefined;
+      setIsActive(false);
+      setCurrentStep(0);
+      setSteps([]);
+      setCurrentTourId(undefined);
+      setHighlightRect(undefined);
+      setTooltipPosition({top: 0, left: 0});
+      setIsPositioned(false);
+    },
+    [currentTourId, currentStep, steps, onTourEnd],
+  );
+
+  // Context-exposed endTour stays compatible with existing consumers.
+  // Defaults to 'closed' since a direct `useTour().endTour()` call is
+  // semantically equivalent to the user dismissing the tour.
+  const endTour = useCallback((): void => {
+    finishTour('closed');
+  }, [finishTour]);
 
   const nextStep = useCallback((): void => {
     if (currentStep < steps.length - 1) {
       setCurrentStep((previous) => previous + 1);
     } else {
-      endTour();
+      finishTour('completed');
     }
-  }, [currentStep, steps.length, endTour]);
+  }, [currentStep, steps.length, finishTour]);
 
   const previousStep = useCallback((): void => {
     if (currentStep > 0) {
@@ -106,7 +135,7 @@ export function TourProvider({
         if (currentStep < steps.length - 1) {
           setCurrentStep((previous) => previous + 1);
         } else {
-          endTour();
+          finishTour('target-missing');
         }
 
         return;
@@ -121,7 +150,7 @@ export function TourProvider({
       setTooltipPosition(position);
       setIsPositioned(true);
     })();
-  }, [isActive, currentStep, steps, endTour, platform]);
+  }, [isActive, currentStep, steps, finishTour, platform]);
 
   // Handle step transitions and onBeforeStep callbacks
   useEffect(() => {
@@ -147,7 +176,7 @@ export function TourProvider({
         if (currentStep < steps.length - 1) {
           setCurrentStep((previous) => previous + 1);
         } else {
-          endTour();
+          finishTour('target-missing');
         }
 
         return;
@@ -163,7 +192,7 @@ export function TourProvider({
     };
 
     void runStep();
-  }, [isActive, currentStep, steps, endTour, platform]);
+  }, [isActive, currentStep, steps, finishTour, platform]);
 
   // Calculate tooltip position with retry logic
   useEffect(() => {
@@ -228,11 +257,15 @@ export function TourProvider({
     }
 
     return platform.subscribeToKeyboard({
-      onEscape: endTour,
+      // On React Native this fires from the Android hardware back button,
+      // which is semantically equivalent to the user closing the tour.
+      onEscape() {
+        finishTour('closed');
+      },
       onNext: nextStep,
       onPrev: previousStep,
     });
-  }, [isActive, endTour, nextStep, previousStep, platform]);
+  }, [isActive, finishTour, nextStep, previousStep, platform]);
 
   // Handle layout changes
   useEffect(() => {
@@ -267,7 +300,13 @@ export function TourProvider({
       <Modal transparent visible={Boolean(isActive && highlightRect)} animationType="fade">
         {highlightRect ? (
           <>
-            <Overlay highlightRect={highlightRect} theme={resolvedTheme} onClose={endTour} />
+            <Overlay
+              highlightRect={highlightRect}
+              theme={resolvedTheme}
+              onClose={() => {
+                finishTour('blur');
+              }}
+            />
 
             {currentTourStep ? (
               <Tooltip

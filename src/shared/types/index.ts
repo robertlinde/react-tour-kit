@@ -7,3 +7,4 @@ export type {TourContextType} from './tour-context.type';
 export type {TourOverlayProps} from './tour-overlay-props.type';
 export type {TourTooltipProps} from './tour-tooltip-props.type';
 export type {TourI18n} from './tour-i18n.type';
+export type {TourEndReason, TourEndInfo, TourEndCallback, StartTourOptions} from './tour-end-info.type';
