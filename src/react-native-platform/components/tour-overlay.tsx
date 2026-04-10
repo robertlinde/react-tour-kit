@@ -88,6 +88,34 @@ export function TourOverlay({highlightRect, onClose, theme}: TourOverlayProps): 
           ]}
         />
 
+        {/* Corner patches to round the cutout corners */}
+        {[
+          {
+            top: cutoutTop,
+            left: cutoutLeft,
+            childStyle: {bottom: 0, right: 0, borderBottomRightRadius: highlightBorderRadius},
+          },
+          {
+            top: cutoutTop,
+            left: cutoutLeft + cutoutWidth - highlightBorderRadius,
+            childStyle: {bottom: 0, left: 0, borderBottomLeftRadius: highlightBorderRadius},
+          },
+          {
+            top: cutoutTop + cutoutHeight - highlightBorderRadius,
+            left: cutoutLeft,
+            childStyle: {top: 0, right: 0, borderTopRightRadius: highlightBorderRadius},
+          },
+          {
+            top: cutoutTop + cutoutHeight - highlightBorderRadius,
+            left: cutoutLeft + cutoutWidth - highlightBorderRadius,
+            childStyle: {top: 0, left: 0, borderTopLeftRadius: highlightBorderRadius},
+          },
+        ].map((corner, i) => (
+          <View key={i} style={[styles.cornerPatch, {top: corner.top, left: corner.left}]}>
+            <View style={[styles.cornerFill, themedStyles.overlay, corner.childStyle]} />
+          </View>
+        ))}
+
         {/* Highlight border */}
         <View
           style={[
@@ -118,5 +146,16 @@ const styles = StyleSheet.create({
     position: 'absolute',
     borderWidth: 2,
     backgroundColor: 'transparent',
+  },
+  cornerPatch: {
+    position: 'absolute',
+    width: highlightBorderRadius,
+    height: highlightBorderRadius,
+    overflow: 'hidden',
+  },
+  cornerFill: {
+    position: 'absolute',
+    width: highlightBorderRadius * 2,
+    height: highlightBorderRadius * 2,
   },
 });
