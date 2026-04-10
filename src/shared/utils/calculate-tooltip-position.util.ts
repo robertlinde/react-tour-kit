@@ -65,15 +65,7 @@ export function calculateTooltipPosition(
     }
   }
 
-  // Ensure tooltip stays within viewport bounds
-  if (left < tooltipPadding) {
-    left = tooltipPadding;
-  }
-
-  if (left + tooltipWidth > viewportWidth - tooltipPadding) {
-    left = viewportWidth - tooltipWidth - tooltipPadding;
-  }
-
+  // Flip tooltip to opposite side if it overflows the viewport
   if (top < tooltipPadding) {
     top = targetRect.bottom + tooltipPadding;
   }
@@ -81,6 +73,10 @@ export function calculateTooltipPosition(
   if (top + tooltipHeight > viewportHeight - tooltipPadding) {
     top = targetRect.top - tooltipHeight - tooltipPadding;
   }
+
+  // Final clamp — ensure tooltip is always reachable within the viewport
+  top = Math.max(tooltipPadding, Math.min(top, viewportHeight - tooltipHeight - tooltipPadding));
+  left = Math.max(tooltipPadding, Math.min(left, viewportWidth - tooltipWidth - tooltipPadding));
 
   return {top, left};
 }

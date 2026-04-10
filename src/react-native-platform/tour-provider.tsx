@@ -33,6 +33,7 @@ export function TourProvider({
   theme,
   platform = nativePlatformAdapter,
   i18n,
+  closeOnOverlayClick = true,
 }: TourProviderProps): JSX.Element {
   const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
   const [isActive, setIsActive] = useState(false);
@@ -301,6 +302,7 @@ export function TourProvider({
         {highlightRect ? (
           <>
             <Overlay
+              closeOnOverlayClick={closeOnOverlayClick}
               highlightRect={highlightRect}
               theme={resolvedTheme}
               onClose={() => {

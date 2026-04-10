@@ -409,14 +409,15 @@ import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
 #### Props
 
-| Prop               | Type                                          | Description                                                                                                                                   |
-| ------------------ | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `children`         | `ReactNode`                                   | Your application content                                                                                                                      |
-| `theme`            | `TourTheme`                                   | Theme configuration for colors (see Theming section)                                                                                          |
-| `i18n`             | `TourI18n`                                    | Internationalization options for labels (see i18n section)                                                                                    |
-| `TooltipComponent` | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)                                                                                                |
-| `OverlayComponent` | `ComponentType<TourOverlayProps>`             | Custom overlay component                                                                                                                      |
-| `onTourEnd`        | `TourEndCallback`                             | Callback fired when any tour ends. Receives `(tourId, info)` with the reason and step context (see [Tour End Callbacks](#tour-end-callbacks)) |
+| Prop                  | Type                                          | Description                                                                                                                                   |
+| --------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `children`            | `ReactNode`                                   | Your application content                                                                                                                      |
+| `theme`               | `TourTheme`                                   | Theme configuration for colors (see Theming section)                                                                                          |
+| `i18n`                | `TourI18n`                                    | Internationalization options for labels (see i18n section)                                                                                    |
+| `TooltipComponent`    | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)                                                                                                |
+| `OverlayComponent`    | `ComponentType<TourOverlayProps>`             | Custom overlay component                                                                                                                      |
+| `onTourEnd`           | `TourEndCallback`                             | Callback fired when any tour ends. Receives `(tourId, info)` with the reason and step context (see [Tour End Callbacks](#tour-end-callbacks)) |
+| `closeOnOverlayClick` | `boolean`                                     | Whether clicking the overlay closes the tour. When `false`, users must click the ✕ button. Defaults to `true`                                 |
 
 ### useTour Hook
 
