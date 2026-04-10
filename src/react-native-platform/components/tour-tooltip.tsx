@@ -1,6 +1,7 @@
 import {type ReactNode, forwardRef, type ForwardedRef, useMemo} from 'react';
 import type {View as ViewType, ViewStyle, TextStyle} from 'react-native';
 import {type TourTooltipProps} from '../../shared';
+import {getTruncatedDots, DOTS_CONTAINER_WIDTH, DOT_SIZE, DOT_GAP} from '../../shared/utils';
 
 const {View, Text, TouchableOpacity, StyleSheet} = require('react-native') as typeof import('react-native');
 
@@ -115,9 +116,16 @@ export const TourTooltip = forwardRef(function TourTooltip(
 
         {/* Step dots */}
         <View style={styles.dots}>
-          {Array.from({length: totalSteps}).map((_, index) => (
-            <View key={index} style={[styles.dot, index === currentStep && themedStyles.dotActive]} />
-          ))}
+          {getTruncatedDots(currentStep, totalSteps).map((item, i) =>
+            item.type === 'ellipsis' ? (
+              <View key={`ellipsis-${i}`} style={styles.ellipsis}>
+                <View style={styles.ellipsisDot} />
+                <View style={styles.ellipsisDot} />
+              </View>
+            ) : (
+              <View key={item.index} style={[styles.dot, item.index === currentStep && themedStyles.dotActive]} />
+            ),
+          )}
         </View>
 
         <TouchableOpacity style={[styles.navButton, themedStyles.nextButton]} onPress={onNext}>
@@ -214,12 +222,29 @@ const styles = StyleSheet.create({
   },
   dots: {
     flexDirection: 'row',
-    gap: 6,
+    gap: DOT_GAP,
+    width: DOTS_CONTAINER_WIDTH,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    backgroundColor: '#d1d5db',
+  },
+  ellipsis: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  ellipsisDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
     backgroundColor: '#d1d5db',
   },
 });

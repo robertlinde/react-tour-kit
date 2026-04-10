@@ -2,6 +2,7 @@
 
 import {type JSX, type ForwardedRef, forwardRef} from 'react';
 import {type TourTooltipProps} from '../../shared';
+import {getTruncatedDots, DOTS_CONTAINER_WIDTH, DOT_SIZE, DOT_GAP} from '../../shared/utils';
 
 const defaultI18n = {
   nextLabel: 'Next',
@@ -119,20 +120,39 @@ function TourTooltipComponent(
     },
     dotsContainer: {
       display: 'flex',
-      gap: '6px',
+      gap: `${DOT_GAP}px`,
+      width: `${DOTS_CONTAINER_WIDTH}px`,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     dot: {
-      width: '8px',
-      height: '8px',
+      width: `${DOT_SIZE}px`,
+      height: `${DOT_SIZE}px`,
       borderRadius: '50%',
       border: 'none',
       cursor: 'pointer',
       padding: 0,
+      flexShrink: 0,
     },
     dotActive: {
       backgroundColor: theme.primaryColor,
     },
     dotInactive: {
+      backgroundColor: '#d1d5db',
+    },
+    ellipsis: {
+      width: `${DOT_SIZE}px`,
+      height: `${DOT_SIZE}px`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '2px',
+      flexShrink: 0,
+    },
+    ellipsisDot: {
+      width: '3px',
+      height: '3px',
+      borderRadius: '50%',
       backgroundColor: '#d1d5db',
     },
   };
@@ -177,20 +197,27 @@ function TourTooltipComponent(
           </button>
 
           <div style={styles.dotsContainer}>
-            {Array.from({length: totalSteps}).map((_, index) => (
-              <button
-                key={`step-${index}`}
-                type="button"
-                style={{
-                  ...styles.dot,
-                  ...(index === currentStep ? styles.dotActive : styles.dotInactive),
-                }}
-                aria-label={dotAriaLabelTemplate.replace('{step}', String(index + 1))}
-                onClick={() => {
-                  onGoToStep(index);
-                }}
-              />
-            ))}
+            {getTruncatedDots(currentStep, totalSteps).map((item, i) =>
+              item.type === 'ellipsis' ? (
+                <span key={`ellipsis-${i}`} style={styles.ellipsis}>
+                  <span style={styles.ellipsisDot} />
+                  <span style={styles.ellipsisDot} />
+                </span>
+              ) : (
+                <button
+                  key={`step-${item.index}`}
+                  type="button"
+                  style={{
+                    ...styles.dot,
+                    ...(item.index === currentStep ? styles.dotActive : styles.dotInactive),
+                  }}
+                  aria-label={dotAriaLabelTemplate.replace('{step}', String(item.index + 1))}
+                  onClick={() => {
+                    onGoToStep(item.index);
+                  }}
+                />
+              ),
+            )}
           </div>
 
           <button type="button" style={styles.nextButton} onClick={onNext}>
