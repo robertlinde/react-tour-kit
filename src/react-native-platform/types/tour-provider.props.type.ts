@@ -40,4 +40,10 @@ export type TourProviderProps = {
    * Internationalization options for customizing text strings.
    */
   readonly i18n?: TourI18n;
+  /**
+   * Whether clicking the overlay (outside the highlighted element) closes the tour.
+   * When `false`, users must use the close (✕) button in the tooltip.
+   * @default true
+   */
+  readonly closeOnOverlayClick?: boolean;
 };

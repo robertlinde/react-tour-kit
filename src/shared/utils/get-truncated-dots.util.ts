@@ -21,7 +21,8 @@ export function getTruncatedDots(currentStep: number, totalSteps: number): DotIt
     if (offset > totalSteps) break;
   }
 
-  const sorted = [...indices].toSorted((a, b) => a - b);
+  // eslint-disable-next-line unicorn/no-array-sort
+  const sorted = [...indices].sort((a, b) => a - b);
 
   for (let i = 0; i < sorted.length; i++) {
     if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
@@ -35,7 +36,8 @@ export function getTruncatedDots(currentStep: number, totalSteps: number): DotIt
 }
 
 function countGaps(indices: Set<number>): number {
-  const sorted = [...indices].toSorted((a, b) => a - b);
+  // eslint-disable-next-line unicorn/no-array-sort
+  const sorted = [...indices].sort((a, b) => a - b);
   let gaps = 0;
   for (let i = 1; i < sorted.length; i++) {
     if (sorted[i] - sorted[i - 1] > 1) gaps++;

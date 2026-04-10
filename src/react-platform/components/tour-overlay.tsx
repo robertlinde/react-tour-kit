@@ -6,7 +6,7 @@ import {type TourOverlayProps} from '../../shared';
 const highlightPadding = 8;
 const borderRadius = 8;
 
-export function TourOverlay({highlightRect, onClose, theme}: TourOverlayProps): JSX.Element {
+export function TourOverlay({highlightRect, onClose, theme, closeOnOverlayClick}: TourOverlayProps): JSX.Element {
   // Convert hex color to rgba for box shadow
   const primaryColorRgba = `${theme.primaryColor}4D`; // 30% opacity
 
@@ -16,8 +16,9 @@ export function TourOverlay({highlightRect, onClose, theme}: TourOverlayProps): 
         position: 'fixed',
         inset: 0,
         zIndex: 9998,
+        cursor: closeOnOverlayClick ? 'pointer' : 'default',
       }}
-      onClick={onClose}
+      onClick={closeOnOverlayClick ? onClose : undefined}
     >
       <svg
         style={{

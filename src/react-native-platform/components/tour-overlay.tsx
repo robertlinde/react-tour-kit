@@ -11,7 +11,7 @@ const highlightBorderRadius = 8;
  * Default overlay component for React Native.
  * Creates a semi-transparent overlay with a cutout for the highlighted element.
  */
-export function TourOverlay({highlightRect, onClose, theme}: TourOverlayProps): ReactNode {
+export function TourOverlay({highlightRect, onClose, theme, closeOnOverlayClick}: TourOverlayProps): ReactNode {
   const cutoutTop = highlightRect.top - highlightPadding;
   const cutoutLeft = highlightRect.left - highlightPadding;
   const cutoutWidth = highlightRect.width + highlightPadding * 2;
@@ -29,110 +29,114 @@ export function TourOverlay({highlightRect, onClose, theme}: TourOverlayProps): 
     [theme],
   );
 
-  return (
-    <TouchableWithoutFeedback onPress={onClose}>
-      <View style={styles.container}>
-        {/* Top overlay */}
-        <View
-          style={[
-            styles.overlay,
-            themedStyles.overlay,
-            {
-              top: 0,
-              left: 0,
-              right: 0,
-              height: cutoutTop,
-            },
-          ]}
-        />
+  const overlayContent = (
+    <View style={styles.container}>
+      {/* Top overlay */}
+      <View
+        style={[
+          styles.overlay,
+          themedStyles.overlay,
+          {
+            top: 0,
+            left: 0,
+            right: 0,
+            height: cutoutTop,
+          },
+        ]}
+      />
 
-        {/* Left overlay */}
-        <View
-          style={[
-            styles.overlay,
-            themedStyles.overlay,
-            {
-              top: cutoutTop,
-              left: 0,
-              width: cutoutLeft,
-              height: cutoutHeight,
-            },
-          ]}
-        />
+      {/* Left overlay */}
+      <View
+        style={[
+          styles.overlay,
+          themedStyles.overlay,
+          {
+            top: cutoutTop,
+            left: 0,
+            width: cutoutLeft,
+            height: cutoutHeight,
+          },
+        ]}
+      />
 
-        {/* Right overlay */}
-        <View
-          style={[
-            styles.overlay,
-            themedStyles.overlay,
-            {
-              top: cutoutTop,
-              left: cutoutLeft + cutoutWidth,
-              right: 0,
-              height: cutoutHeight,
-            },
-          ]}
-        />
+      {/* Right overlay */}
+      <View
+        style={[
+          styles.overlay,
+          themedStyles.overlay,
+          {
+            top: cutoutTop,
+            left: cutoutLeft + cutoutWidth,
+            right: 0,
+            height: cutoutHeight,
+          },
+        ]}
+      />
 
-        {/* Bottom overlay */}
-        <View
-          style={[
-            styles.overlay,
-            themedStyles.overlay,
-            {
-              top: cutoutTop + cutoutHeight,
-              left: 0,
-              right: 0,
-              bottom: 0,
-            },
-          ]}
-        />
+      {/* Bottom overlay */}
+      <View
+        style={[
+          styles.overlay,
+          themedStyles.overlay,
+          {
+            top: cutoutTop + cutoutHeight,
+            left: 0,
+            right: 0,
+            bottom: 0,
+          },
+        ]}
+      />
 
-        {/* Corner patches to round the cutout corners */}
-        {[
+      {/* Corner patches to round the cutout corners */}
+      {[
+        {
+          top: cutoutTop,
+          left: cutoutLeft,
+          childStyle: {bottom: 0, right: 0, borderBottomRightRadius: highlightBorderRadius},
+        },
+        {
+          top: cutoutTop,
+          left: cutoutLeft + cutoutWidth - highlightBorderRadius,
+          childStyle: {bottom: 0, left: 0, borderBottomLeftRadius: highlightBorderRadius},
+        },
+        {
+          top: cutoutTop + cutoutHeight - highlightBorderRadius,
+          left: cutoutLeft,
+          childStyle: {top: 0, right: 0, borderTopRightRadius: highlightBorderRadius},
+        },
+        {
+          top: cutoutTop + cutoutHeight - highlightBorderRadius,
+          left: cutoutLeft + cutoutWidth - highlightBorderRadius,
+          childStyle: {top: 0, left: 0, borderTopLeftRadius: highlightBorderRadius},
+        },
+      ].map((corner, i) => (
+        <View key={i} style={[styles.cornerPatch, {top: corner.top, left: corner.left}]}>
+          <View style={[styles.cornerFill, themedStyles.overlay, corner.childStyle]} />
+        </View>
+      ))}
+
+      {/* Highlight border */}
+      <View
+        style={[
+          styles.highlightBorder,
+          themedStyles.highlightBorder,
           {
             top: cutoutTop,
             left: cutoutLeft,
-            childStyle: {bottom: 0, right: 0, borderBottomRightRadius: highlightBorderRadius},
+            width: cutoutWidth,
+            height: cutoutHeight,
+            borderRadius: highlightBorderRadius,
           },
-          {
-            top: cutoutTop,
-            left: cutoutLeft + cutoutWidth - highlightBorderRadius,
-            childStyle: {bottom: 0, left: 0, borderBottomLeftRadius: highlightBorderRadius},
-          },
-          {
-            top: cutoutTop + cutoutHeight - highlightBorderRadius,
-            left: cutoutLeft,
-            childStyle: {top: 0, right: 0, borderTopRightRadius: highlightBorderRadius},
-          },
-          {
-            top: cutoutTop + cutoutHeight - highlightBorderRadius,
-            left: cutoutLeft + cutoutWidth - highlightBorderRadius,
-            childStyle: {top: 0, left: 0, borderTopLeftRadius: highlightBorderRadius},
-          },
-        ].map((corner, i) => (
-          <View key={i} style={[styles.cornerPatch, {top: corner.top, left: corner.left}]}>
-            <View style={[styles.cornerFill, themedStyles.overlay, corner.childStyle]} />
-          </View>
-        ))}
-
-        {/* Highlight border */}
-        <View
-          style={[
-            styles.highlightBorder,
-            themedStyles.highlightBorder,
-            {
-              top: cutoutTop,
-              left: cutoutLeft,
-              width: cutoutWidth,
-              height: cutoutHeight,
-              borderRadius: highlightBorderRadius,
-            },
-          ]}
-        />
-      </View>
-    </TouchableWithoutFeedback>
+        ]}
+      />
+    </View>
   );
+
+  if (closeOnOverlayClick) {
+    return <TouchableWithoutFeedback onPress={onClose}>{overlayContent}</TouchableWithoutFeedback>;
+  }
+
+  return overlayContent;
 }
 
 const styles = StyleSheet.create({
