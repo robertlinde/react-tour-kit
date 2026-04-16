@@ -30,9 +30,14 @@ const createTourSteps = (navigate: (path: string) => void): TourStep[] => [
     placement: 'bottom',
     async onBeforeStep(target) {
       navigate('/settings');
-      while (!document.querySelector(target as string)) {
+      if (typeof target === 'string') {
         await new Promise<void>((resolve) => {
-          setTimeout(resolve, 50);
+          const interval = setInterval(() => {
+            if (document.querySelector(target)) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 50);
         });
       }
     },
@@ -56,9 +61,14 @@ const createTourSteps = (navigate: (path: string) => void): TourStep[] => [
     placement: 'bottom',
     async onBeforeStep(target) {
       navigate('/');
-      while (!document.querySelector(target as string)) {
+      if (typeof target === 'string') {
         await new Promise<void>((resolve) => {
-          setTimeout(resolve, 50);
+          const interval = setInterval(() => {
+            if (document.querySelector(target)) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 50);
         });
       }
     },
