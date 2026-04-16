@@ -28,11 +28,18 @@ const createTourSteps = (navigate: (path: string) => void): TourStep[] => [
     title: "Let's Visit Settings",
     content: "Now we'll navigate to the Settings page to continue the tour.",
     placement: 'bottom',
-    async onBeforeStep() {
+    async onBeforeStep(target) {
       navigate('/settings');
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 100);
-      });
+      if (typeof target === 'string') {
+        await new Promise<void>((resolve) => {
+          const interval = setInterval(() => {
+            if (document.querySelector(target)) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 50);
+        });
+      }
     },
   },
   {
@@ -52,11 +59,18 @@ const createTourSteps = (navigate: (path: string) => void): TourStep[] => [
     title: 'Back to Home',
     content: "Let's go back to the home page to finish up.",
     placement: 'bottom',
-    async onBeforeStep() {
+    async onBeforeStep(target) {
       navigate('/');
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 100);
-      });
+      if (typeof target === 'string') {
+        await new Promise<void>((resolve) => {
+          const interval = setInterval(() => {
+            if (document.querySelector(target)) {
+              clearInterval(interval);
+              resolve();
+            }
+          }, 50);
+        });
+      }
     },
   },
   {
