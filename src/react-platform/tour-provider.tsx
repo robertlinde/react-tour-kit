@@ -171,7 +171,7 @@ export function TourProvider({
 
     const runStep = async (): Promise<void> => {
       if (currentTourStep.onBeforeStep) {
-        await currentTourStep.onBeforeStep();
+        await currentTourStep.onBeforeStep(currentTourStep.target);
         await new Promise<void>((resolve) => {
           setTimeout(resolve, domUpdateDelayMs);
         });

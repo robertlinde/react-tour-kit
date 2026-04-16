@@ -274,10 +274,12 @@ function Home() {
       title: 'Settings Link',
       content: "Now let's visit the settings page.",
       placement: 'bottom',
-      // Navigate before the NEXT step shows
-      onBeforeStep: async () => {
+      // Navigate before the NEXT step shows, then poll until its target mounts
+      onBeforeStep: async (target) => {
         navigate('/settings');
-        await new Promise((r) => setTimeout(r, 100)); // Wait for navigation
+        while (!document.querySelector(target as string)) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
       },
     },
     {
@@ -291,9 +293,11 @@ function Home() {
       title: 'Back Home',
       content: 'And we can navigate back.',
       placement: 'bottom',
-      onBeforeStep: async () => {
+      onBeforeStep: async (target) => {
         navigate('/');
-        await new Promise((r) => setTimeout(r, 100));
+        while (!document.querySelector(target as string)) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
       },
     },
   ];
@@ -343,7 +347,7 @@ function HomeScreen() {
       title: 'Settings Screen',
       content: 'This element is on the Settings screen!',
       placement: 'bottom',
-      onBeforeStep: async () => {
+      onBeforeStep: async (target) => {
         navigation.navigate('Settings');
         await new Promise((r) => setTimeout(r, 300)); // Wait for animation
       },
@@ -353,7 +357,7 @@ function HomeScreen() {
       title: 'Back Home',
       content: 'And we can navigate back.',
       placement: 'bottom',
-      onBeforeStep: async () => {
+      onBeforeStep: async (target) => {
         navigation.navigate('Home');
         await new Promise((r) => setTimeout(r, 300));
       },
@@ -379,7 +383,7 @@ function SettingsScreen() {
 
 1. **TourProvider placement**: Must wrap your router/navigator so tour state persists across navigation
 2. **Target availability**: Targets must be mounted when their step is active. Use `onBeforeStep` to navigate first
-3. **Wait for navigation**: Add a small delay after navigation to ensure the new page/screen is rendered
+3. **Wait for navigation**: On web, poll on the `target` argument in `onBeforeStep` (e.g. `while (!document.querySelector(target))`) instead of a fixed delay. On React Native, a short delay is usually fine because navigation animations have a known duration.
 4. **Persistent elements**: Elements like navigation bars that exist on all pages don't need `onBeforeStep`
 
 ---
@@ -451,7 +455,7 @@ type TourStep = {
   title: string; // Step title
   content: string; // Step description/content
   placement?: 'top' | 'bottom' | 'left' | 'right'; // Tooltip position (default: 'bottom')
-  onBeforeStep?: () => void | Promise<void>; // Async action before showing step
+  onBeforeStep?: (target: TourTarget) => void | Promise<void>; // Async action before showing step; receives the step's target so you can poll until it mounts
 };
 
 // Target types differ by platform:
@@ -759,11 +763,13 @@ const steps: TourStep[] = [
     target: '[data-tour="notifications-panel"]',
     title: 'Notifications',
     content: 'Configure your notification preferences here.',
-    onBeforeStep: async () => {
+    onBeforeStep: async (target) => {
       // Open the settings tab before showing this step
       document.querySelector('[data-tour="settings-tab"]')?.click();
-      // Wait for the panel to appear
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Poll until the panel actually mounts instead of guessing a delay
+      while (!document.querySelector(target as string)) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
     },
   },
 ];
