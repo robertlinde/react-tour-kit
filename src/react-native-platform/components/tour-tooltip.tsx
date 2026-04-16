@@ -1,5 +1,5 @@
-import {type ReactNode, forwardRef, type ForwardedRef, useMemo} from 'react';
-import type {View as ViewType, ViewStyle, TextStyle} from 'react-native';
+import {type ReactNode, forwardRef, type ForwardedRef, useCallback, useMemo} from 'react';
+import type {View as ViewType, ViewStyle, TextStyle, LayoutChangeEvent} from 'react-native';
 import {type TourTooltipProps} from '../../shared';
 import {getTruncatedDots, DOTS_CONTAINER_WIDTH, DOT_SIZE, DOT_GAP} from '../../shared/utils';
 
@@ -28,6 +28,7 @@ export const TourTooltip = forwardRef(function TourTooltip(
     onClose,
     onNext,
     onPrev,
+    onMeasured,
     theme,
     i18n,
   }: TourTooltipProps,
@@ -37,6 +38,18 @@ export const TourTooltip = forwardRef(function TourTooltip(
 
   const isFirstStep = currentStep === 0;
   const isLastStep = currentStep === totalSteps - 1;
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent): void => {
+      if (!onMeasured) {
+        return;
+      }
+
+      const {width, height} = event.nativeEvent.layout;
+      onMeasured({width, height});
+    },
+    [onMeasured],
+  );
 
   const themedStyles = useMemo(
     (): {
@@ -85,6 +98,7 @@ export const TourTooltip = forwardRef(function TourTooltip(
           opacity: isPositioned ? 1 : 0,
         },
       ]}
+      onLayout={handleLayout}
     >
       {/* Header */}
       <View style={styles.header}>

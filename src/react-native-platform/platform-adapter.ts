@@ -73,9 +73,11 @@ export const nativePlatformAdapter: PlatformAdapter = {
   },
 
   measureTooltip(): {width: number; height: number} {
-    // In React Native, we typically use onLayout to get dimensions
-    // For initial render, return defaults - actual dimensions come from onLayout
-    // This is a limitation compared to web, but works with the retry logic
+    // React Native cannot synchronously report a View's rendered size. The
+    // provider instead passes an onMeasured callback to the tooltip component
+    // which reports dimensions via onLayout after the first render, and the
+    // position is then recalculated with the accurate size. This adapter
+    // method is kept for interface parity with the web adapter.
     return {width: 0, height: 0};
   },
 
