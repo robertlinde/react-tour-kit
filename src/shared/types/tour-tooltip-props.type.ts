@@ -29,4 +29,10 @@ export type TourTooltipProps = {
   readonly theme: Required<TourTheme>;
   /** Internationalization options for customizing text strings. */
   readonly i18n?: TourI18n;
+  /**
+   * Called by the tooltip component after it has been laid out, with its actual rendered size.
+   * The provider uses this on platforms where tooltip dimensions cannot be measured synchronously
+   * (e.g. React Native) to re-run position calculation with accurate dimensions.
+   */
+  readonly onMeasured?: (size: {width: number; height: number}) => void;
 };

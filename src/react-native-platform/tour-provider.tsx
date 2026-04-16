@@ -43,6 +43,7 @@ export function TourProvider({
   const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0});
   const [isPositioned, setIsPositioned] = useState(false);
   const [highlightRect, setHighlightRect] = useState<Rect | undefined>(undefined);
+  const [tooltipSize, setTooltipSize] = useState({width: 0, height: 0});
   const tooltipRef = useRef<ViewType>(null);
   const [positionKey, setPositionKey] = useState(0);
   const tourOnEndRef = useRef<TourEndCallback | undefined>(undefined);
@@ -85,10 +86,21 @@ export function TourProvider({
       setCurrentTourId(undefined);
       setHighlightRect(undefined);
       setTooltipPosition({top: 0, left: 0});
+      setTooltipSize({width: 0, height: 0});
       setIsPositioned(false);
     },
     [currentTourId, currentStep, steps, onTourEnd],
   );
+
+  const handleTooltipMeasured = useCallback((size: {width: number; height: number}): void => {
+    setTooltipSize((previous) => {
+      if (previous.width === size.width && previous.height === size.height) {
+        return previous;
+      }
+
+      return size;
+    });
+  }, []);
 
   // Context-exposed endTour stays compatible with existing consumers.
   // Defaults to 'closed' since a direct `useTour().endTour()` call is
@@ -145,13 +157,12 @@ export function TourProvider({
       setHighlightRect(rect);
 
       const placement = currentTourStep.placement ?? defaultPlacement;
-      const tooltipDimensions = platform.measureTooltip(tooltipRef);
       const viewportDimensions = platform.getViewportDimensions();
-      const position = calculateTooltipPosition(rect, placement, tooltipDimensions, viewportDimensions);
+      const position = calculateTooltipPosition(rect, placement, tooltipSize, viewportDimensions);
       setTooltipPosition(position);
       setIsPositioned(true);
     })();
-  }, [isActive, currentStep, steps, finishTour, platform]);
+  }, [isActive, currentStep, steps, finishTour, platform, tooltipSize]);
 
   // Handle step transitions and onBeforeStep callbacks
   useEffect(() => {
@@ -185,6 +196,9 @@ export function TourProvider({
 
       setHighlightRect(rect);
       setIsPositioned(false);
+      // Reset tooltip size so a stale measurement from the previous step can't
+      // place the next tooltip incorrectly on its first frame.
+      setTooltipSize({width: 0, height: 0});
 
       // Trigger positioning - scrolling happens after tooltip is measured
       setTimeout(() => {
@@ -228,15 +242,14 @@ export function TourProvider({
           setHighlightRect(rect);
 
           const placement = currentTourStep.placement ?? defaultPlacement;
-          const tooltipDimensions = platform.measureTooltip(tooltipRef);
           const viewportDimensions = platform.getViewportDimensions();
-          const position = calculateTooltipPosition(rect, placement, tooltipDimensions, viewportDimensions);
+          const position = calculateTooltipPosition(rect, placement, tooltipSize, viewportDimensions);
 
           setTooltipPosition(position);
           setIsPositioned(true);
 
           // Scroll after positioning so we have actual tooltip dimensions
-          await platform.scrollToElement(currentTourStep.target, placement, tooltipDimensions.height);
+          await platform.scrollToElement(currentTourStep.target, placement, tooltipSize.height);
         })();
       });
     };
@@ -249,7 +262,7 @@ export function TourProvider({
         platform.cancelFrame(animationFrameId);
       }
     };
-  }, [isActive, currentStep, steps, highlightRect, positionKey, platform]);
+  }, [isActive, currentStep, steps, highlightRect, positionKey, platform, tooltipSize]);
 
   // Keyboard/back button navigation
   useEffect(() => {
@@ -323,6 +336,7 @@ export function TourProvider({
                 totalSteps={steps.length}
                 onClose={endTour}
                 onGoToStep={goToStep}
+                onMeasured={handleTooltipMeasured}
                 onNext={nextStep}
                 onPrev={previousStep}
               />
