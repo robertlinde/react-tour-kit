@@ -10,6 +10,9 @@ export type TourStep = {
   title: string;
   content: string;
   placement?: Placement;
-  /** Called before this step is shown. Use to switch tabs, open dialogs, etc. */
-  onBeforeStep?: () => void | Promise<void>;
+  /**
+   * Called before this step is shown. Use to switch tabs, open dialogs, navigate, etc.
+   * Receives the step's `target` so the callback can poll until the element mounts.
+   */
+  onBeforeStep?: (target: TourTarget) => void | Promise<void>;
 };
