@@ -40,7 +40,7 @@ const createTourSteps = (navigate: (screen: keyof RootStackParameterList) => voi
     title: "Let's Visit Settings",
     content: "Now we'll navigate to Settings to continue the tour.",
     placement: 'bottom',
-    async onBeforeStep() {
+    async onBeforeStep(_target) {
       navigate('Settings');
       await new Promise<void>((resolve) => {
         setTimeout(resolve, 300);
