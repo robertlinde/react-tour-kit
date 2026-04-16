@@ -195,10 +195,14 @@ export function TourProvider({
       }
 
       setHighlightRect(rect);
-      setIsPositioned(false);
-      // Reset tooltip size so a stale measurement from the previous step can't
-      // place the next tooltip incorrectly on its first frame.
-      setTooltipSize({width: 0, height: 0});
+      // Intentionally do not reset isPositioned or tooltipSize here. Keeping
+      // the previous step's measurement lets the next step's tooltip move
+      // directly to its new position instead of flashing invisible while we
+      // wait for onLayout to refire. onLayout will update tooltipSize on the
+      // next frame if the new content has a different height; the position
+      // effect then re-runs with the latest size. Only the very first step of
+      // a tour starts with isPositioned=false (from useState), preserving the
+      // opacity-0 first-render behavior that prevents the initial jump.
 
       // Trigger positioning - scrolling happens after tooltip is measured
       setTimeout(() => {
