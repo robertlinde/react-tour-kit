@@ -246,7 +246,12 @@ export function TourProvider({
           const position = calculateTooltipPosition(rect, placement, tooltipSize, viewportDimensions);
 
           setTooltipPosition(position);
-          setIsPositioned(true);
+          // Only reveal the tooltip once we have its real measured size. Showing it
+          // earlier flashes it at a position computed from the default-height fallback,
+          // then visibly jumps when onLayout reports the real dimensions.
+          if (tooltipSize.height > 0 && tooltipSize.width > 0) {
+            setIsPositioned(true);
+          }
 
           // Scroll after positioning so we have actual tooltip dimensions
           await platform.scrollToElement(currentTourStep.target, placement, tooltipSize.height);
