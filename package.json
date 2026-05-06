@@ -70,8 +70,8 @@
     "husky": "9.1.7",
     "lint-staged": "17.0.2",
     "prettier": "3.8.3",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
     "typescript": "6.0.3",
     "xo": "2.0.2"
   },
