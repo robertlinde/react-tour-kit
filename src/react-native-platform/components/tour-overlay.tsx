@@ -1,8 +1,8 @@
-import {type ReactNode, useMemo} from 'react';
-import type {ViewStyle} from 'react-native';
+import {type ReactNode} from 'react';
 import {type TourOverlayProps} from '../../shared';
 
 const {View, StyleSheet, TouchableWithoutFeedback} = require('react-native') as typeof import('react-native');
+const {default: Svg, Defs, Mask, Rect} = require('react-native-svg') as typeof import('react-native-svg');
 
 const highlightPadding = 8;
 const highlightBorderRadius = 8;
@@ -12,122 +12,41 @@ const highlightBorderRadius = 8;
  * Creates a semi-transparent overlay with a cutout for the highlighted element.
  */
 export function TourOverlay({highlightRect, onClose, theme, closeOnOverlayClick}: TourOverlayProps): ReactNode {
-  const cutoutTop = highlightRect.top - highlightPadding;
-  const cutoutLeft = highlightRect.left - highlightPadding;
-  const cutoutWidth = highlightRect.width + highlightPadding * 2;
-  const cutoutHeight = highlightRect.height + highlightPadding * 2;
-
-  const themedStyles = useMemo(
-    (): {overlay: ViewStyle; highlightBorder: ViewStyle} => ({
-      overlay: {
-        backgroundColor: theme.overlayColor,
-      },
-      highlightBorder: {
-        borderColor: theme.primaryColor,
-      },
-    }),
-    [theme],
-  );
+  const x = highlightRect.left - highlightPadding;
+  const y = highlightRect.top - highlightPadding;
+  const width = highlightRect.width + highlightPadding * 2;
+  const height = highlightRect.height + highlightPadding * 2;
 
   const overlayContent = (
-    <View style={styles.container}>
-      {/* Top overlay */}
-      <View
-        style={[
-          styles.overlay,
-          themedStyles.overlay,
-          {
-            top: 0,
-            left: 0,
-            right: 0,
-            height: cutoutTop,
-          },
-        ]}
-      />
+    <View style={StyleSheet.absoluteFill} pointerEvents={closeOnOverlayClick ? 'auto' : 'none'}>
+      {/* SVG `x`/`y` attributes are flagged @deprecated by inheritance from RN's
+        ViewStyle, but they are the canonical SVG positioning API and have no
+        replacement on react-native-svg's Rect. */}
+      <Svg style={StyleSheet.absoluteFill}>
+        <Defs>
+          <Mask id="tour-mask">
+            {/* eslint-disable-next-line @typescript-eslint/no-deprecated */}
+            <Rect x="0" y="0" width="100%" height="100%" fill="white" />
+            {/* eslint-disable-next-line @typescript-eslint/no-deprecated */}
+            <Rect x={x} y={y} width={width} height={height} rx={highlightBorderRadius} fill="black" />
+          </Mask>
+        </Defs>
+        {/* eslint-disable-next-line @typescript-eslint/no-deprecated */}
+        <Rect x="0" y="0" width="100%" height="100%" fill={theme.overlayColor} mask="url(#tour-mask)" />
+      </Svg>
 
-      {/* Left overlay */}
       <View
-        style={[
-          styles.overlay,
-          themedStyles.overlay,
-          {
-            top: cutoutTop,
-            left: 0,
-            width: cutoutLeft,
-            height: cutoutHeight,
-          },
-        ]}
-      />
-
-      {/* Right overlay */}
-      <View
-        style={[
-          styles.overlay,
-          themedStyles.overlay,
-          {
-            top: cutoutTop,
-            left: cutoutLeft + cutoutWidth,
-            right: 0,
-            height: cutoutHeight,
-          },
-        ]}
-      />
-
-      {/* Bottom overlay */}
-      <View
-        style={[
-          styles.overlay,
-          themedStyles.overlay,
-          {
-            top: cutoutTop + cutoutHeight,
-            left: 0,
-            right: 0,
-            bottom: 0,
-          },
-        ]}
-      />
-
-      {/* Corner patches to round the cutout corners */}
-      {[
-        {
-          top: cutoutTop,
-          left: cutoutLeft,
-          childStyle: {bottom: 0, right: 0, borderBottomRightRadius: highlightBorderRadius},
-        },
-        {
-          top: cutoutTop,
-          left: cutoutLeft + cutoutWidth - highlightBorderRadius,
-          childStyle: {bottom: 0, left: 0, borderBottomLeftRadius: highlightBorderRadius},
-        },
-        {
-          top: cutoutTop + cutoutHeight - highlightBorderRadius,
-          left: cutoutLeft,
-          childStyle: {top: 0, right: 0, borderTopRightRadius: highlightBorderRadius},
-        },
-        {
-          top: cutoutTop + cutoutHeight - highlightBorderRadius,
-          left: cutoutLeft + cutoutWidth - highlightBorderRadius,
-          childStyle: {top: 0, left: 0, borderTopLeftRadius: highlightBorderRadius},
-        },
-      ].map((corner, i) => (
-        <View key={i} style={[styles.cornerPatch, {top: corner.top, left: corner.left}]}>
-          <View style={[styles.cornerFill, themedStyles.overlay, corner.childStyle]} />
-        </View>
-      ))}
-
-      {/* Highlight border */}
-      <View
-        style={[
-          styles.highlightBorder,
-          themedStyles.highlightBorder,
-          {
-            top: cutoutTop,
-            left: cutoutLeft,
-            width: cutoutWidth,
-            height: cutoutHeight,
-            borderRadius: highlightBorderRadius,
-          },
-        ]}
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          top: y,
+          left: x,
+          width,
+          height,
+          borderRadius: highlightBorderRadius,
+          borderWidth: 2,
+          borderColor: theme.primaryColor,
+        }}
       />
     </View>
   );
@@ -138,28 +57,3 @@ export function TourOverlay({highlightRect, onClose, theme, closeOnOverlayClick}
 
   return overlayContent;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    ...StyleSheet.absoluteFill,
-  },
-  overlay: {
-    position: 'absolute',
-  },
-  highlightBorder: {
-    position: 'absolute',
-    borderWidth: 2,
-    backgroundColor: 'transparent',
-  },
-  cornerPatch: {
-    position: 'absolute',
-    width: highlightBorderRadius,
-    height: highlightBorderRadius,
-    overflow: 'hidden',
-  },
-  cornerFill: {
-    position: 'absolute',
-    width: highlightBorderRadius * 2,
-    height: highlightBorderRadius * 2,
-  },
-});
