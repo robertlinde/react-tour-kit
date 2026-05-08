@@ -20,6 +20,16 @@ Cross-platform guided tour library for React and React Native. Build interactive
 npm install @robertlinde/react-tour-kit
 ```
 
+For React Native, the default overlay also requires `react-native-svg`:
+
+```bash
+npm install react-native-svg
+# or, with Expo:
+npx expo install react-native-svg
+```
+
+(Not needed if you're using web only, or if you provide a custom `OverlayComponent`.)
+
 ## Live Demos
 
 Try the demos locally:
