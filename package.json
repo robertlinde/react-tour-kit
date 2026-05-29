@@ -64,8 +64,8 @@
     }
   },
   "devDependencies": {
-    "@commitlint/cli": "21.0.1",
-    "@commitlint/config-conventional": "21.0.1",
+    "@commitlint/cli": "21.0.2",
+    "@commitlint/config-conventional": "21.0.2",
     "@estruyf/github-actions-reporter": "1.12.0",
     "@playwright/test": "1.60.0",
     "@types/react": "19.2.15",
