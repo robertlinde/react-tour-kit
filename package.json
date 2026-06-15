@@ -67,7 +67,7 @@
     "@commitlint/cli": "21.0.2",
     "@commitlint/config-conventional": "21.0.2",
     "@estruyf/github-actions-reporter": "1.12.0",
-    "@playwright/test": "1.60.0",
+    "@playwright/test": "1.61.0",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/react-native": "0.73.0",
