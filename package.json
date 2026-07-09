@@ -73,7 +73,7 @@
     "@types/react-native": "0.73.0",
     "husky": "9.1.7",
     "lint-staged": "17.0.8",
-    "prettier": "3.9.4",
+    "prettier": "3.9.5",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "react-native-svg": "15.15.5",
