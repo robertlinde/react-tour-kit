@@ -9,8 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-navigation/native": "7.3.9",
-    "@react-navigation/native-stack": "7.18.1",
+    "@react-navigation/native": "7.3.10",
+    "@react-navigation/native-stack": "7.18.2",
     "@robertlinde/react-tour-kit": "0.8.8",
     "expo": "57.0.6",
     "expo-status-bar": "57.0.1",
