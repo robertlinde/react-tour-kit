@@ -74,8 +74,8 @@
     "husky": "9.1.7",
     "lint-staged": "17.1.0",
     "prettier": "3.9.6",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "react-native-svg": "15.15.5",
     "typescript": "6.0.3",
     "xo": "2.0.2"
