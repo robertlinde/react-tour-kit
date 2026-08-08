@@ -34,6 +34,10 @@ export type {Rect, TourTarget} from './shared';
 
 export {calculateTooltipPosition} from './shared';
 
+export {getTruncatedDots, MAX_VISIBLE_DOTS, DOT_SIZE, DOT_GAP, DOTS_CONTAINER_WIDTH} from './shared';
+
+export type {DotItem} from './shared';
+
 // Platform adapter (for advanced customization)
 
 export {nativePlatformAdapter, targetRegistry} from './react-native-platform';

@@ -31,3 +31,7 @@ export {useTour} from './hooks';
 // Utils
 
 export {calculateTooltipPosition} from './utils';
+
+export {getTruncatedDots, MAX_VISIBLE_DOTS, DOT_SIZE, DOT_GAP, DOTS_CONTAINER_WIDTH} from './utils';
+
+export type {DotItem} from './utils';
