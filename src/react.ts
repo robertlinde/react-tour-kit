@@ -32,6 +32,10 @@ export type {Rect, TourTarget} from './shared';
 
 export {calculateTooltipPosition} from './shared';
 
+export {getTruncatedDots, MAX_VISIBLE_DOTS, DOT_SIZE, DOT_GAP, DOTS_CONTAINER_WIDTH} from './shared';
+
+export type {DotItem} from './shared';
+
 export {findVisibleElement} from './react-platform';
 
 // Platform adapter (for advanced customization)
