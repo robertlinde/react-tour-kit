@@ -78,7 +78,7 @@
     "react-dom": "19.2.8",
     "react-native-svg": "15.15.5",
     "typescript": "6.0.3",
-    "xo": "2.0.2"
+    "xo": "4.0.0"
   },
   "keywords": [
     "react",
