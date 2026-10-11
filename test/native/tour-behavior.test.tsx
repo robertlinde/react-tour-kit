@@ -83,6 +83,10 @@ const native: TourBehaviorHarness = {
       </Pressable>
     ),
   },
+  moveSilently(id, {x, y}) {
+    // A native-driver animation changes the view's transform without React or any layout event knowing.
+    element(id).style.transform = `translate(${x}px, ${y}px)`;
+  },
   tooltip,
   async waitForStep(title) {
     await expect.element(page.getByTestId('rtk-tooltip').getByText(title, {exact: true})).toBeVisible();

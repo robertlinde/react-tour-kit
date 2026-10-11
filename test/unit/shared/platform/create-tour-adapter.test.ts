@@ -190,6 +190,55 @@ describe('createTourAdapter: following', () => {
   });
 });
 
+describe('createTourAdapter: waiting for a target to move', () => {
+  it('checks every frame, since animations can move a target without any event', async () => {
+    const {adapter, state} = createFakePlatform();
+    state.target = rect(100);
+    const from = await adapter.measure('t');
+    let moved: TargetMeasurement | undefined;
+    void adapter.waitForMove('t', from, new AbortController().signal).then((value) => {
+      moved = value;
+    });
+    // Sub-pixel jitter is not a move.
+    state.target = {...rect(100), y: 100.2};
+    await vi.advanceTimersByTimeAsync(300);
+    expect(moved).toBeUndefined();
+    // A screen finishes sliding in (a native-driver animation): the target jumps, no event says so.
+    state.target = rect(40);
+    await vi.advanceTimersByTimeAsync(frameMs * 2);
+    expect(moved?.rect).toEqual(rect(40));
+  });
+
+  it('resolves `undefined` once the target is gone', async () => {
+    const {adapter, state} = createFakePlatform();
+    state.target = rect(100);
+    const from = await adapter.measure('t');
+    let isDone = false;
+    const wait = adapter.waitForMove('t', from, new AbortController().signal).finally(() => {
+      isDone = true;
+    });
+    await vi.advanceTimersByTimeAsync(frameMs * 2);
+    expect(isDone).toBe(false);
+    state.target = undefined;
+    await vi.advanceTimersByTimeAsync(frameMs * 2);
+    expect(isDone).toBe(true);
+    expect(await wait).toBeUndefined();
+  });
+
+  it('stops checking when aborted', async () => {
+    const {adapter, state} = createFakePlatform();
+    state.target = rect(100);
+    const controller = new AbortController();
+    const wait = adapter.waitForMove('t', await adapter.measure('t'), controller.signal);
+    await vi.advanceTimersByTimeAsync(100);
+    controller.abort();
+    expect(await wait).toBeUndefined();
+    const {measures} = state;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(state.measures).toBe(measures);
+  });
+});
+
 describe('createTourAdapter: revealing', () => {
   const request = (behavior: 'smooth' | 'instant') => ({
     margins: [{top: 20, right: 20, bottom: 20, left: 20}],

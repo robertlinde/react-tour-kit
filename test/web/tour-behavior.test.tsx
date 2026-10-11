@@ -52,6 +52,9 @@ const web: TourBehaviorHarness = {
       </button>
     ),
   },
+  moveSilently(id, {x, y}) {
+    element(`#${id}`).animate([{translate: `${x}px ${y}px`}], {duration: 0, fill: 'forwards'});
+  },
   tooltip,
   async waitForStep(title) {
     await expect.element(page.getByRole('heading', {name: title})).toBeVisible();

@@ -36,6 +36,17 @@ export type TourAdapter = {
   /** Resolves as soon as the target is rendered and measurable. Event-driven where the platform allows; never busy-polls. */
   readonly waitForTarget: (target: TourTarget, signal: AbortSignal) => Promise<TargetMeasurement | undefined>;
   /**
+   * Resolves with the target's measurement once it differs from `from`, or `undefined` once the
+   * target is gone. Checks every frame: animations can move a target without any event (React
+   * Native's native-driver animations, such as a screen sliding in, and the Web Animations API).
+   * Resolves `undefined` as soon as `signal` is aborted.
+   */
+  readonly waitForMove: (
+    target: TourTarget,
+    from: TargetMeasurement | undefined,
+    signal: AbortSignal,
+  ) => Promise<TargetMeasurement | undefined>;
+  /**
    * The visible area of the tour layer and what covers its edges (safe areas, the on-screen
    * keyboard, stuck navigation bars). Pass the step's target so that a bar containing it does not
    * count as covering it.

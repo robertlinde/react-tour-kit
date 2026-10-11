@@ -2,6 +2,14 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.0.1
+
+### Fixed
+
+- Targets moved by animations that report no events are followed: a React Native screen sliding in with the native driver (a stack navigator, for example), or an animation of the Web Animations API. Until such an animation ends, the target is measured where it started:
+  - when that was on screen, the highlight and tooltip stayed there instead of following the target;
+  - when it was off screen (a screen sliding in from the side), the step was skipped.
+
 ## 1.0.0
 
 A rewrite for reliability, smoothness and accessibility. The everyday API is unchanged; see [MIGRATION.md](./MIGRATION.md) for the breaking changes.

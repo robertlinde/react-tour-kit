@@ -5,6 +5,8 @@ import type {TourEndInfo} from '../../../../src/shared/types/tour-end-info.type.
 import type {TourStep} from '../../../../src/shared/types/tour-step.type.js';
 import {
   createTourEngine,
+  silentMoveMaxMs,
+  silentMoveQuietMs,
   targetTimeoutMs,
   type TourEngine,
   type TourEngineOptions,
@@ -631,7 +633,7 @@ describe('tour engine: bringing targets into view', () => {
     expect(engine.getViewState().shown?.highlight).toEqual(rect(100));
   });
 
-  it('skips targets that cannot be scrolled into view', async () => {
+  it('skips targets that cannot be scrolled into view, once they have not moved for a moment', async () => {
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     const {engine, fake} = setup();
     fake.setTarget('#t1', rect(5000));
@@ -639,8 +641,42 @@ describe('tour engine: bringing targets into view', () => {
     await flush();
     engine.actions.nextStep();
     await flush();
+    expect(engine.getViewState().phase).toBe('preparing');
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs);
     expect(fake.calls.reveal.map((request) => request.behavior)).toEqual(['smooth', 'smooth', 'instant', 'smooth']);
     expect(engine.getPublicState().currentStep).toBe(2);
+  });
+
+  it('waits for a target out of sight to arrive, as when a screen slides in', async () => {
+    const {engine, fake} = setup();
+    // Until the animation ends, the target is measured where it started: off screen.
+    fake.setTarget('#t0', {x: -500, y: 100, width: 120, height: 40});
+    engine.actions.startTour(steps(1));
+    await flush();
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs / 2);
+    expect(engine.getViewState().shown).toBeUndefined();
+    // The animation ends: the target jumps into view, and no event says so.
+    fake.setTarget('#t0', rect(100));
+    await flush();
+    expect(engine.getViewState().shown?.highlight).toEqual(rect(100));
+  });
+
+  it('skips a target that keeps moving out of sight after a few seconds', async () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const {engine, fake} = setup();
+    let x = -500;
+    fake.setTarget('#t0', {x, y: 100, width: 120, height: 40});
+    const drift = setInterval(() => {
+      x -= 10;
+      fake.setTarget('#t0', {x, y: 100, width: 120, height: 40});
+    }, 100);
+    engine.actions.startTour(steps(2));
+    await flush();
+    await vi.advanceTimersByTimeAsync(silentMoveMaxMs - 500);
+    expect(engine.getViewState().shown).toBeUndefined();
+    await vi.advanceTimersByTimeAsync(1000);
+    clearInterval(drift);
+    expect(engine.getPublicState().currentStep).toBe(1);
   });
 
   it('shows partly visible targets after an instant correction', async () => {
@@ -676,6 +712,7 @@ describe('tour engine: bringing targets into view', () => {
     expect(engine.getPublicState().currentStep).toBe(0);
     engine.actions.nextStep();
     await flush();
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs);
     expect(engine.getPublicState().currentStep).toBe(2);
   });
 
@@ -686,6 +723,7 @@ describe('tour engine: bringing targets into view', () => {
     fake.setTarget('#t0', rect(400), {x: 0, y: 0, width: 1280, height: 200});
     engine.actions.startTour(steps(2));
     await flush();
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs);
     expect(engine.getPublicState().currentStep).toBe(1);
   });
 });
@@ -722,6 +760,41 @@ describe('tour engine: layout updates and idle', () => {
     fake.triggerObservers();
     await flush();
     expect(engine.getViewState().shown).toMatchObject({transitionId, highlight: rect(130)});
+  });
+
+  it('follows a target that an animation moves right after the step appears, then only reacts to events', async () => {
+    const {engine, fake} = setup();
+    engine.actions.startTour(steps(2));
+    await flush();
+    const {transitionId} = engine.getViewState().shown!;
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs / 2);
+    // The animation ends: the target jumps, and no event says so (no `triggerObservers`).
+    fake.setTarget('#t0', rect(130));
+    await flush();
+    expect(engine.getViewState().shown).toMatchObject({transitionId, highlight: rect(130)});
+    // Once it has not moved for a moment, it is no longer checked.
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs);
+    const waits = fake.calls.waitForMove;
+    fake.setTarget('#t0', rect(160));
+    await vi.advanceTimersByTimeAsync(silentMoveQuietMs);
+    expect(engine.getViewState().shown?.highlight).toEqual(rect(130));
+    expect(fake.calls.waitForMove).toBe(waits);
+  });
+
+  it('stops checking a target that never stops moving after a few seconds', async () => {
+    const {engine, fake} = setup();
+    engine.actions.startTour(steps(1));
+    await flush();
+    let y = 100;
+    const pulse = setInterval(() => {
+      y = y === 100 ? 101 : 100;
+      fake.setTarget('#t0', rect(y));
+    }, 400);
+    await vi.advanceTimersByTimeAsync(silentMoveMaxMs);
+    const waits = fake.calls.waitForMove;
+    await vi.advanceTimersByTimeAsync(2000);
+    clearInterval(pulse);
+    expect(fake.calls.waitForMove).toBe(waits);
   });
 
   it('ignores a slow measurement that finishes after a newer one', async () => {

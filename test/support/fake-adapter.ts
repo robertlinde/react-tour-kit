@@ -1,15 +1,24 @@
+import {boxesEqual} from '../../src/shared/geometry/box.util.js';
 import type {Box, Viewport} from '../../src/shared/geometry/geometry.type.js';
 import type {RevealRequest, TargetMeasurement, TourAdapter} from '../../src/shared/engine/tour-adapter.type.js';
 import type {TourTarget} from '../../src/shared/types/tour-step.type.js';
 
 type Observer = {readonly target: TourTarget | undefined; readonly onChange: () => void; readonly signal: AbortSignal};
 type Waiter = {readonly key: string; readonly resolve: (value: TargetMeasurement | undefined) => void};
+type Mover = Waiter & {readonly from: TargetMeasurement | undefined};
 
 export type FakeAdapter = {
   readonly adapter: TourAdapter;
-  readonly calls: {measure: number; waitForTarget: number; reveal: RevealRequest[]; observe: number};
+  readonly calls: {
+    measure: number;
+    waitForTarget: number;
+    waitForMove: number;
+    reveal: RevealRequest[];
+    observe: number;
+  };
   /** Signals passed to `waitForTarget`, to assert that abandoned waits are aborted. */
   readonly waitSignals: AbortSignal[];
+  /** Places, moves or removes a target. No observer is called (see `triggerObservers`), as for an animation. */
   setTarget: (id: string, rect: Box | undefined, clip?: Box, occluders?: readonly Box[]) => void;
   /** Simulates a layout change: calls every active observer. */
   triggerObservers: () => void;
@@ -30,6 +39,8 @@ export type FakeAdapter = {
 };
 
 const keyOf = (target: TourTarget): string => (typeof target === 'string' ? target : 'ref');
+const hasMoved = (from: TargetMeasurement | undefined, to: TargetMeasurement | undefined): boolean =>
+  !boxesEqual(from?.rect, to?.rect);
 
 const desktopViewport: Viewport = {
   rect: {x: 0, y: 0, width: 1280, height: 800},
@@ -43,10 +54,11 @@ export function createFakeAdapter(
   const targets = new Map<string, TargetMeasurement>();
   const observers = new Set<Observer>();
   const waiters = new Set<Waiter>();
+  const movers = new Set<Mover>();
   let currentViewport = viewport;
   let revealHandler: ((target: string, request: RevealRequest) => Box | undefined) | undefined;
   let asyncRevealHandler: ((target: string) => Promise<void>) | undefined;
-  const calls: FakeAdapter['calls'] = {measure: 0, waitForTarget: 0, reveal: [], observe: 0};
+  const calls: FakeAdapter['calls'] = {measure: 0, waitForTarget: 0, waitForMove: 0, reveal: [], observe: 0};
   const heldMeasures: Array<(resolve: (value: TargetMeasurement | undefined) => void, key: string) => void> = [];
   const waitSignals: AbortSignal[] = [];
 
@@ -75,6 +87,23 @@ export function createFakeAdapter(
         waiters.add(waiter);
         signal.addEventListener('abort', () => {
           waiters.delete(waiter);
+          resolve(undefined);
+        });
+      });
+    },
+    // Event-driven here: resolves when `setTarget` moves the target (no frames to count in tests).
+    async waitForMove(target, from, signal) {
+      calls.waitForMove++;
+      const current = targets.get(keyOf(target));
+      if (hasMoved(from, current)) {
+        return current;
+      }
+
+      return new Promise((resolve) => {
+        const mover: Mover = {key: keyOf(target), from, resolve};
+        movers.add(mover);
+        signal.addEventListener('abort', () => {
+          movers.delete(mover);
           resolve(undefined);
         });
       });
@@ -132,6 +161,12 @@ export function createFakeAdapter(
         }
       } else {
         targets.delete(id);
+      }
+
+      const moved = [...movers].filter((mover) => mover.key === id && hasMoved(mover.from, targets.get(id)));
+      for (const mover of moved) {
+        movers.delete(mover);
+        mover.resolve(targets.get(id));
       }
     },
     triggerObservers() {

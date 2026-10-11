@@ -123,7 +123,8 @@ test('has no accessibility violations', async ({page}) => {
 test('does no work while a step is on screen', async ({page}) => {
   await startTour(page);
   await next(page, 'Highlight anything');
-  await page.waitForTimeout(500);
+  // Right after a step appears, the tour checks its target for a second (animations can move it unannounced).
+  await page.waitForTimeout(1500);
   const counts = await page.evaluate(async () => {
     const counters = {measurements: 0, frames: 0, scrolls: 0, mutations: 0};
     const original = {

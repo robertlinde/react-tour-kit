@@ -13,8 +13,12 @@ const stableFramesNeeded = 2;
 const maxSettleFrames = 12;
 /** ...or after this long: frames stop in background tabs, timers only slow down. */
 const maxSettleMs = 300;
-/** Longest wait for a frame while settling, for the same reason. */
+/** Longest wait for a frame while settling or watching, for the same reason. */
 const settleFrameMs = 50;
+
+function sameMeasurement(a: TargetMeasurement | undefined, b: TargetMeasurement | undefined): boolean {
+  return boxesEqual(a?.rect, b?.rect, 0.5) && boxesEqual(a?.clip, b?.clip, 0.5);
+}
 
 /**
  * The tour's behaviour on top of a platform: waiting for targets, following them, and scrolling
@@ -92,6 +96,20 @@ export function createTourAdapter(platform: PlatformAdapter): TourAdapter {
         signal.removeEventListener('abort', onAbort);
         unsubscribe();
       }
+    },
+
+    async waitForMove(target, from, signal): Promise<TargetMeasurement | undefined> {
+      while (!signal.aborted) {
+        // eslint-disable-next-line no-await-in-loop -- one measurement per frame
+        await nextFrameOrAfter(signal, settleFrameMs);
+        // eslint-disable-next-line no-await-in-loop -- see above
+        const current = signal.aborted ? undefined : await platform.measure(target);
+        if (!signal.aborted && !sameMeasurement(from, current)) {
+          return current;
+        }
+      }
+
+      return undefined;
     },
 
     getViewport: platform.getViewport,

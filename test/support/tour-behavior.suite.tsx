@@ -40,6 +40,12 @@ export type TourBehaviorHarness = {
   readonly tooltip: () => HTMLElement | null;
   /** Waits until the step titled `title` is on screen and has finished entering; returns the tooltip. */
   readonly waitForStep: (title: string) => Promise<HTMLElement>;
+  /**
+   * Moves a target by an offset from where it is laid out, the way an animation does that no event
+   * reports (React Native: a native-driver animation, such as a screen sliding in; the web: the Web
+   * Animations API).
+   */
+  readonly moveSilently: (id: string, offset: {readonly x: number; readonly y: number}) => void;
   /** Presses whatever is on screen at a point of the page (the dimmed area, the tooltip), as a finger or mouse would. */
   readonly pressAt: (point: {readonly x: number; readonly y: number}) => Promise<void>;
   /** The platform's own way of leaving the tour (Escape on the web, the back button on Android). */
@@ -319,6 +325,27 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       await harness.waitForStep('Late');
     });
 
+    it('waits for a target that slides in from off screen', async () => {
+      await renderScreen();
+      startedTour().startTour([
+        {
+          ...steps[0]!,
+          onBeforeStep() {
+            // A screen sliding in: its content is measured where the animation started, off screen,
+            // until the animation ends.
+            harness.moveSilently('first', {x: -500, y: 0});
+            setTimeout(() => {
+              harness.moveSilently('first', {x: 0, y: 0});
+            }, 500);
+          },
+        },
+      ]);
+      const tooltip = await harness.waitForStep('First step');
+      expect(tooltip.getBoundingClientRect().top).toBeGreaterThanOrEqual(
+        harness.rectOf('first').bottom + highlightPadding - tolerance,
+      );
+    });
+
     it('scrolls a target inside a scrollable area into view', async () => {
       await harness.render(
         <>
@@ -338,6 +365,20 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       expect(target.top).toBeGreaterThanOrEqual(screen.top + harness.insets.top - tolerance);
       expect(target.bottom).toBeLessThanOrEqual(screen.bottom - harness.insets.bottom + tolerance);
       expectInSafeArea(tooltip.getBoundingClientRect());
+    });
+
+    it('follows a target that an animation moves after the step appears', async () => {
+      await renderScreen();
+      startedTour().startTour(steps);
+      const tooltip = await harness.waitForStep('First step');
+      const before = tooltip.getBoundingClientRect().top;
+      harness.moveSilently('first', {x: 0, y: 60});
+      await vi.waitFor(
+        () => {
+          expect(harness.tooltip()!.getBoundingClientRect().top).toBeCloseTo(before + 60, 0);
+        },
+        {timeout: 1500},
+      );
     });
 
     it('keeps the last step on screen while the tour fades out', async () => {
@@ -363,7 +404,8 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       });
       startedTour().startTour(steps);
       await harness.waitForStep('First step');
-      await sleep(400);
+      // Right after a step appears, the tour checks its target for a moment (animations can move it unannounced).
+      await sleep(1300);
       const measure = vi.spyOn(Element.prototype, 'getBoundingClientRect');
       const frames = vi.spyOn(globalThis, 'requestAnimationFrame');
       const before = commits;
