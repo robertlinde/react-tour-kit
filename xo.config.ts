@@ -1,11 +1,33 @@
-import {type FlatXoConfig} from 'xo';
+import {type FlatXoConfig, type XoConfigItem} from 'xo';
+
+type ImportPattern = {readonly regex: string; readonly message: string};
+
+const imports = {
+	reactNative: {regex: '^react-native(/|$)', message: 'Only the React Native entry may import React Native.'},
+	reactDom: {regex: '^react-dom(/|$)', message: 'Only the web entry may import react-dom.'},
+	webPlatform: {regex: '(^|/)react-platform(/|$)', message: 'Only the web entry may import the web platform.'},
+	nativePlatform: {
+		regex: '(^|/)react-native-platform(/|$)',
+		message: 'Only the React Native entry may import the React Native platform.',
+	},
+} satisfies Record<string, ImportPattern>;
+
+/** Each published entry only reaches its own platform: the web build never loads React Native, and the other way round. */
+function platformBoundary(files: string[], forbidden: ImportPattern[]): XoConfigItem {
+	return {
+		files,
+		rules: {'no-restricted-imports': ['error', {patterns: forbidden}]},
+	};
+}
 
 const xoConfig: FlatXoConfig = [
 	{
-		ignores: ['node_modules', 'dist'],
+		// The demos are separate apps, checked by their own toolchains (tsc, ESLint, Expo).
+		ignores: ['node_modules', 'dist', 'demos'],
 	},
 	{
-		files: ['src/**/*.ts', 'src/**/*.tsx'],
+		files: ['src/**/*.ts', 'src/**/*.tsx', 'test/**/*.ts', 'test/**/*.tsx'],
+		ignores: ['test/e2e/**'],
 		react: true,
 		prettier: true,
 		space: true,
@@ -57,66 +79,74 @@ const xoConfig: FlatXoConfig = [
 			// React rules - allow index keys for static lists like step dots
 			'react/no-array-index-key': 'off',
 
+			// `const [instance] = useState(() => create())` is the idiomatic way to create a stable instance once
+			'react/hook-use-state': 'off',
+
+			// The `v` flag is ES2024 and a syntax error on Hermes (React Native) and Safari 16; `u` is enough
+			'require-unicode-regexp': ['error', {}],
+
 			// Import rules - disable file extension requirements
 			'import-x/extensions': 'off',
 			'n/file-extension-in-import': 'off',
 		},
 	},
-	// React Native files need special rules for dynamic imports
+	platformBoundary(['src/shared/**'], [imports.reactNative, imports.reactDom, imports.webPlatform, imports.nativePlatform]),
+	platformBoundary(['src/react.ts', 'src/react-platform/**'], [imports.reactNative, imports.nativePlatform]),
+	platformBoundary(['src/react-native.ts', 'src/react-native-platform/**'], [imports.reactDom, imports.webPlatform]),
+	// Unit and component tests
 	{
-		files: ['src/react-native-platform/**/*.ts', 'src/react-native-platform/**/*.tsx', 'src/react-native.ts'],
+		files: ['test/**/*.ts', 'test/**/*.tsx'],
+		ignores: ['test/e2e/**'],
 		rules: {
-			// Dynamic require is needed to avoid bundling RN in web builds
-			'unicorn/prefer-module': 'off',
-			'@typescript-eslint/no-require-imports': 'off',
-			'@typescript-eslint/no-var-requires': 'off',
-			'@typescript-eslint/consistent-type-imports': 'off',
-			// Type assertions are needed for `require('react-native') as typeof import(...)` pattern
-			// and for RN measure API which uses untyped refs
+			// Test callbacks and inline components don't need explicit return types
+			'@typescript-eslint/explicit-function-return-type': 'off',
+			// Assertions on values the test just set up
+			'@typescript-eslint/no-non-null-assertion': 'off',
+			// No-op stubs
+			'@typescript-eslint/no-empty-function': 'off',
+			// Sequential awaits are intentional in tests
+			'no-await-in-loop': 'off',
+			// Fixtures build objects of known shape
 			'@typescript-eslint/no-unsafe-type-assertion': 'off',
-			// RN measure callback has 6 params
+			'react/boolean-prop-naming': 'off',
+			'react/jsx-no-bind': 'off',
+			// Inline test components are typed by the harness they implement
+			'react/prop-types': 'off',
 			'max-params': 'off',
-			// Allow unused params prefixed with underscore (for interface compliance)
-			'@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_', varsIgnorePattern: '^_'}],
+			// Tests capture hook results and count renders on purpose
+			'react-hooks/globals': 'off',
+			// Mock implementations and assertion helpers return values freely
+			'@typescript-eslint/strict-void-return': 'off',
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			// Exhaustive loops over input combinations
+			'max-depth': 'off',
+			// Tests run on Node and modern browsers only
+			'unicorn/no-array-sort': 'off',
 		},
 	},
-	// Demo files - looser rules for example code
+	// Node scripts and tool configuration (same formatting as the source: Prettier with spaces)
 	{
-		files: ['demos/**/*.ts', 'demos/**/*.tsx'],
-		react: true,
+		files: ['test/**/*.mjs', 'vitest.config.ts', 'playwright.config.ts'],
 		prettier: true,
 		space: true,
 		semicolon: true,
 		rules: {
-			// Disable stylistic rules
 			'@stylistic/indent': 'off',
-			'@stylistic/object-curly-newline': 'off',
-			'@stylistic/no-mixed-operators': 'off',
-			'no-mixed-operators': 'off',
-
-			// React rules
-			'react/react-in-jsx-scope': 'off',
-
-			// Looser TypeScript rules for demos
-			'@typescript-eslint/no-unsafe-assignment': 'off',
+			// Config files are not part of the type-aware project
 			'@typescript-eslint/no-unsafe-call': 'off',
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-unsafe-member-access': 'off',
 			'@typescript-eslint/no-unsafe-argument': 'off',
-			'@typescript-eslint/restrict-plus-operands': 'off',
-			'@typescript-eslint/explicit-function-return-type': 'off',
+			'@typescript-eslint/no-confusing-void-expression': 'off',
+			'no-console': 'off',
+			'n/prefer-global/process': 'off',
+			'unicorn/no-process-exit': 'off',
 			'@typescript-eslint/naming-convention': 'off',
-			'@typescript-eslint/capitalized-comments': 'off',
-			'capitalized-comments': 'off',
-			'unicorn/prevent-abbreviations': 'off',
-			'unicorn/filename-case': 'off',
-
-			// Import rules
-			'import-x/extensions': 'off',
-			'n/file-extension-in-import': 'off',
 		},
 	},
 	// E2E test files - Playwright tests
 	{
-		files: ['playwright/**/*.ts'],
+		files: ['test/e2e/**/*.ts'],
 		prettier: true,
 		space: true,
 		semicolon: true,

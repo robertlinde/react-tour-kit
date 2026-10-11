@@ -1,0 +1,207 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'main'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # -------- Lint, types, unit tests, package checks --------
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build
+        run: npm run build
+
+      - name: Check package (publint, attw)
+        run: npm run check:package
+
+      - name: Node ESM import and server render
+        run: npm run smoke:node
+
+  # -------- Component tests in a real browser, on every supported React major --------
+  component:
+    name: Component tests (React ${{ matrix.react }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        react: ['18', '19']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Use React 18
+        if: ${{ matrix.react == '18' }}
+        run: npm install --no-save react@18.3.1 react-dom@18.3.1 @types/react@18.3.31 @types/react-dom@18.3.7
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Component tests
+        run: npm run test:component
+
+  # -------- End to end, against the packed tarball (exactly what gets published) --------
+  e2e:
+    name: End-to-end tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix demos/react
+
+      - name: Build and pack the library
+        run: |
+          npm run build
+          npm pack
+          echo "TARBALL=$PWD/$(ls robertlinde-react-tour-kit-*.tgz)" >> "$GITHUB_ENV"
+
+      - name: Install the tarball into the demo
+        run: npm install --no-save --prefix demos/react "$TARBALL"
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium firefox webkit --with-deps
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+        env:
+          TOUR_KIT_FROM_PACKAGE: '1'
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: playwright-report
+          path: |
+            blob-report/
+            test-results/
+          retention-days: 30
+          if-no-files-found: ignore
+
+  # -------- React Native: a real Metro bundle of the tarball for both platforms --------
+  native-smoke:
+    name: React Native bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          npm ci --prefix demos/react-native
+
+      - name: Typecheck the demo (against the library source)
+        run: npx tsc --noEmit -p demos/react-native
+
+      - name: Build and pack the library
+        run: |
+          npm run build
+          npm pack
+          echo "TARBALL=$PWD/$(ls robertlinde-react-tour-kit-*.tgz)" >> "$GITHUB_ENV"
+
+      - name: Install the tarball into the demo
+        run: npm install --no-save --prefix demos/react-native "$TARBALL"
+
+      - name: Bundle for Android and iOS
+        working-directory: demos/react-native
+        run: npx expo export --platform android --platform ios --output-dir "$RUNNER_TEMP/expo-export"
+        env:
+          TOUR_KIT_FROM_PACKAGE: '1'
+
+  # -------- The version this pull request would release --------
+  next-version:
+    name: Next version (dry run)
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Get next version
+        id: get_next_version
+        uses: thenativeweb/get-next-version@2.8.2
+
+      - name: Report
+        run: |
+          if [ "${{ steps.get_next_version.outputs.hasNextVersion }}" = "true" ]; then
+            echo "Merging this would release ${{ steps.get_next_version.outputs.version }}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Merging this would not release a new version." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # -------- Secrets --------
+  trufflehog:
+    name: TruffleHog
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog OSS
+        uses: trufflesecurity/trufflehog@v3.99.2
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug

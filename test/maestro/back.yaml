@@ -1,0 +1,47 @@
+# Going back works across screens and out of a modal: each step shows its own screen again.
+appId: ${APP_ID}
+name: Goes back across screens
+---
+# Start clean, even if an earlier run left a tour open.
+- tapOn:
+    id: 'rtk-close'
+    optional: true
+# Home also scrolls the home screen back to the top.
+- tapOn:
+    id: 'tab-home'
+- tapOn: 'Start the tour'
+- extendedWaitUntil:
+    visible: 'Welcome to react-tour-kit'
+    timeout: 10000
+- repeat:
+    times: 7
+    commands:
+      - tapOn:
+          id: 'rtk-next'
+      - waitForAnimationToEnd
+- extendedWaitUntil:
+    visible: 'Modal screens'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Long lists'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Across screens'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Below the fold'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Horizontal lists'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Smart placement'
+- tapOn:
+    id: 'rtk-close'
+- extendedWaitUntil:
+    notVisible: 'Smart placement'

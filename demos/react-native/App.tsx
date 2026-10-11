@@ -1,83 +1,189 @@
-import React from 'react';
+import {type ComponentRef, createContext, createRef, type ReactNode, use, useState} from 'react';
 import {StatusBar} from 'expo-status-bar';
-import {StyleSheet, Text, View, TouchableOpacity, ScrollView} from 'react-native';
-import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
-import {NavigationContainer, useNavigation} from '@react-navigation/native';
-import {createNativeStackNavigator, type NativeStackNavigationProp} from '@react-navigation/native-stack';
-import {TourProvider, useTour, useTourTarget, type TourStep} from '@robertlinde/react-tour-kit/react-native';
+import {FlatList, Pressable, ScrollView, StyleSheet, Switch, Text, View} from 'react-native';
+import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {CommonActions, createNavigationContainerRef, NavigationContainer, StackActions} from '@react-navigation/native';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import {
+  TourHost,
+  TourProvider,
+  type TourStep,
+  type TourTheme,
+  type TourTooltipProps,
+  useTour,
+  useTourScrollView,
+  useTourTarget,
+} from '@robertlinde/react-tour-kit/react-native';
 
-type RootStackParameterList = {
+type Screens = {
   Home: undefined;
   Settings: undefined;
+  Help: undefined;
 };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParameterList>;
+const Stack = createNativeStackNavigator<Screens>();
+const navigation = createNavigationContainerRef<Screens>();
+/** The home screen's scroll view: the Home tab scrolls it back to the top. */
+const homeScroll = createRef<ComponentRef<typeof ScrollView>>();
 
-const Stack = createNativeStackNavigator<RootStackParameterList>();
+/** Shows `screen`: goes back to it when it is already open, otherwise opens it. Safe to call repeatedly. */
+function show(screen: keyof Screens): void {
+  if (!navigation.isReady() || navigation.getCurrentRoute()?.name === screen) {
+    return;
+  }
 
-// Tour steps that span multiple screens
-const createTourSteps = (navigate: (screen: keyof RootStackParameterList) => void): TourStep[] => [
-  {
+  const isOpen = navigation.getRootState()?.routes.some((route) => route.name === screen) ?? false;
+  navigation.dispatch(isOpen ? StackActions.popTo(screen) : CommonActions.navigate(screen));
+}
+
+/**
+ * The demo tour. Every step shows its own screen first, so it works in both directions (Next and
+ * Back). The tour waits for the target to appear; no delays needed.
+ */
+function on(screen: keyof Screens, step: TourStep): TourStep {
+  return {
+    ...step,
+    onBeforeStep() {
+      show(screen);
+    },
+  };
+}
+
+const demoTour: TourStep[] = [
+  on('Home', {
     target: 'header',
-    title: 'Welcome to React Tour!',
-    content: 'This demo showcases cross-screen tours in React Native.',
-    placement: 'bottom',
-  },
-  {
-    target: 'nav-home',
-    title: 'Navigation',
-    content: 'Use these tabs to navigate between screens.',
-    placement: 'bottom',
-  },
-  {
-    target: 'feature-1',
-    title: 'Easy to Use',
-    content: 'Register targets with useTourTarget, reference by string ID.',
-    placement: 'bottom',
-  },
-  {
+    title: 'Welcome to react-tour-kit',
+    content: 'A guided tour across screens, lists and modals. Use Next and Back, or tap outside to close.',
+  }),
+  on('Home', {
     target: 'nav-settings',
-    title: "Let's Visit Settings",
-    content: "Now we'll navigate to Settings to continue the tour.",
-    placement: 'bottom',
-    async onBeforeStep(_target) {
-      navigate('Settings');
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 300);
-      });
-    },
-  },
-  {
-    target: 'settings-header',
-    title: 'Settings Screen',
-    content: "We've navigated to a different screen! The tour continues seamlessly.",
-    placement: 'bottom',
-  },
-  {
-    target: 'theme-toggle',
-    title: 'Theme Settings',
-    content: 'Tours can highlight elements on any screen in your app.',
-    placement: 'bottom',
-  },
-  {
-    target: 'nav-home',
-    title: 'Back to Home',
-    content: "Let's go back to the home screen to finish up.",
-    placement: 'bottom',
-    async onBeforeStep() {
-      navigate('Home');
-      await new Promise<void>((resolve) => {
-        setTimeout(resolve, 300);
-      });
-    },
-  },
-  {
-    target: 'cta-button',
-    title: "That's It!",
-    content: "You've completed a cross-screen tour. TourProvider wraps your navigator.",
+    title: 'Highlight anything',
+    content: 'Any view registered with useTourTarget can be a step, including navigation elements.',
+  }),
+  on('Home', {
+    target: 'feature-1',
+    title: 'Smart placement',
+    content: 'The tooltip picks the side with room and never leaves the safe area.',
     placement: 'top',
-  },
+  }),
+  on('Home', {
+    target: 'integration-last',
+    title: 'Horizontal lists',
+    content: 'Targets at the end of a horizontal FlatList are scrolled into view.',
+  }),
+  on('Home', {
+    target: 'install',
+    title: 'Below the fold',
+    content: 'Scroll views registered with useTourScrollView are scrolled for you.',
+  }),
+  on('Settings', {
+    target: 'settings-header',
+    title: 'Across screens',
+    content: 'Steps can live on other screens: onBeforeStep navigates, the tour waits for the target.',
+  }),
+  on('Settings', {
+    target: 'advanced',
+    title: 'Long lists',
+    content: 'Deep in a scrolling list, still found and brought into view.',
+  }),
+  on('Help', {
+    target: 'help-card',
+    title: 'Modal screens',
+    content: 'Add <TourHost /> to a modal screen and the tour is drawn on top of it.',
+  }),
+  on('Home', {
+    target: 'cta-button',
+    title: "That's it!",
+    content: 'Wrap your app in TourProvider and call startTour. Have fun!',
+    placement: 'top',
+  }),
 ];
+
+const darkTheme: TourTheme = {
+  primaryColor: '#8b5cf6',
+  tooltipBackground: '#1f2937',
+  titleColor: '#f9fafb',
+  contentColor: '#d1d5db',
+  overlayColor: 'rgba(0, 0, 0, 0.7)',
+};
+
+/** A custom tooltip: only the content; the tour positions, animates and focuses it. */
+function CompactTooltip({step, currentStep, totalSteps, onNext, onPrev, onClose}: TourTooltipProps): ReactNode {
+  const isLast = currentStep === totalSteps - 1;
+  return (
+    <View style={styles.compact}>
+      <Text style={styles.compactTitle} role="heading">
+        {step.title}
+      </Text>
+      <Text style={styles.compactText}>{step.content}</Text>
+      <View style={styles.compactActions}>
+        <Pressable accessibilityRole="button" onPress={onClose}>
+          <Text style={styles.compactLink}>Skip</Text>
+        </Pressable>
+        <Text style={styles.compactCount}>
+          {currentStep + 1}/{totalSteps}
+        </Text>
+        <Pressable accessibilityRole="button" disabled={currentStep === 0} onPress={onPrev}>
+          <Text style={[styles.compactLink, currentStep === 0 && styles.disabled]}>Back</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onNext}>
+          <Text style={styles.compactLink}>{isLast ? 'Done' : 'Next'}</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+type Settings = {
+  readonly isCompact: boolean;
+  readonly setIsCompact: (value: boolean) => void;
+};
+
+const SettingsContext = createContext<Settings>({isCompact: false, setIsCompact() {}});
+
+function TabBar(): ReactNode {
+  const insets = useSafeAreaInsets();
+  const homeRef = useTourTarget('nav-home');
+  const settingsRef = useTourTarget('nav-settings');
+
+  return (
+    <View style={[styles.tabBar, {paddingTop: insets.top + 8}]}>
+      <Pressable
+        ref={homeRef}
+        testID="tab-home"
+        accessibilityRole="button"
+        style={styles.tabButton}
+        onPress={() => {
+          show('Home');
+          homeScroll.current?.scrollTo({y: 0, animated: true});
+        }}
+      >
+        <Text style={styles.tabButtonText}>Home</Text>
+      </Pressable>
+      <Pressable
+        ref={settingsRef}
+        testID="tab-settings"
+        accessibilityRole="button"
+        style={styles.tabButton}
+        onPress={() => {
+          show('Settings');
+        }}
+      >
+        <Text style={styles.tabButtonText}>Settings</Text>
+      </Pressable>
+      <Pressable
+        testID="tab-help"
+        accessibilityRole="button"
+        style={styles.tabButton}
+        onPress={() => {
+          show('Help');
+        }}
+      >
+        <Text style={styles.tabButtonText}>Help</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 function FeatureCard({
   tourId,
@@ -89,201 +195,223 @@ function FeatureCard({
   readonly icon: string;
   readonly title: string;
   readonly description: string;
-}): React.JSX.Element {
-  const ref = useTourTarget<View>(tourId);
-
+}): ReactNode {
+  const ref = useTourTarget(tourId);
   return (
-    <View ref={ref} style={styles.featureCard}>
+    <View ref={ref} style={styles.card}>
       <Text style={styles.featureIcon}>{icon}</Text>
-      <Text style={styles.featureTitle}>{title}</Text>
-      <Text style={styles.featureDescription}>{description}</Text>
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={styles.cardText}>{description}</Text>
     </View>
   );
 }
 
-function TabBar(): React.JSX.Element {
-  const navigation = useNavigation<NavigationProp>();
-  const homeRef = useTourTarget<View>('nav-home');
-  const settingsRef = useTourTarget<View>('nav-settings');
+const integrations = [
+  'Expo',
+  'React Navigation',
+  'Reanimated',
+  'Gesture Handler',
+  'Safe Area',
+  'Screens',
+  'Skia',
+  'Analytics',
+];
 
+function Integration({name, isLast}: {readonly name: string; readonly isLast: boolean}): ReactNode {
+  // Every card registers; only the last one is used by the tour.
+  const ref = useTourTarget(isLast ? 'integration-last' : `integration-${name}`);
   return (
-    <View style={styles.tabBar}>
-      <TouchableOpacity
-        ref={homeRef}
-        style={styles.tabButton}
-        onPress={() => {
-          navigation.navigate('Home');
-        }}
-      >
-        <Text style={styles.tabButtonText}>Home</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        ref={settingsRef}
-        style={styles.tabButton}
-        onPress={() => {
-          navigation.navigate('Settings');
-        }}
-      >
-        <Text style={styles.tabButtonText}>Settings</Text>
-      </TouchableOpacity>
+    <View ref={ref} style={styles.integration}>
+      <Text style={styles.cardTitle}>{name}</Text>
     </View>
   );
 }
 
-function HomeScreen(): React.JSX.Element {
+function Integrations(): ReactNode {
+  const listRef = useTourScrollView<FlatList<string>>();
+  return (
+    <FlatList
+      ref={listRef}
+      horizontal
+      data={integrations}
+      keyExtractor={(name) => name}
+      contentContainerStyle={styles.integrations}
+      showsHorizontalScrollIndicator={false}
+      renderItem={({item, index}) => <Integration name={item} isLast={index === integrations.length - 1} />}
+    />
+  );
+}
+
+function HomeScreen(): ReactNode {
   const {startTour, isActive, currentStep, steps} = useTour();
-  const navigation = useNavigation<NavigationProp>();
-  const headerRef = useTourTarget<View>('header');
-  const ctaRef = useTourTarget<View>('cta-button');
-
-  const handleStartTour = (): void => {
-    navigation.navigate('Home');
-    setTimeout(() => {
-      startTour(
-        createTourSteps((screen) => {
-          navigation.navigate(screen);
-        }),
-        'cross-screen-tour',
-      );
-    }, 100);
-  };
+  // A ref the app already has: pass it in.
+  const scrollRef = useTourScrollView(homeScroll);
+  const headerRef = useTourTarget('header');
+  const ctaRef = useTourTarget('cta-button');
+  const installRef = useTourTarget('install');
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View ref={headerRef} style={styles.header}>
-          <Text style={styles.headerTitle}>react-tour-kit</Text>
-          <Text style={styles.headerSubtitle}>A flexible, customizable tour component for React Native</Text>
+    <ScrollView ref={scrollRef} style={styles.screen} contentContainerStyle={{paddingBottom: insets.bottom + 24}}>
+      <View ref={headerRef} style={styles.header}>
+        <Text style={styles.headerTitle}>react-tour-kit</Text>
+        <Text style={styles.headerSubtitle}>Guided tours for React and React Native that never leave the screen</Text>
+      </View>
+
+      <View style={styles.main}>
+        <Pressable
+          ref={ctaRef}
+          accessibilityRole="button"
+          style={styles.ctaButton}
+          onPress={() => {
+            startTour(demoTour, 'demo');
+          }}
+        >
+          <Text style={styles.ctaButtonText}>
+            {isActive ? `Step ${currentStep + 1} of ${steps.length}` : 'Start the tour'}
+          </Text>
+        </Pressable>
+
+        <Text style={styles.sectionTitle}>Features</Text>
+        <FeatureCard
+          tourId="feature-1"
+          icon="🚀"
+          title="Simple"
+          description="Wrap your app in TourProvider, call startTour from useTour. That's the whole API."
+        />
+        <FeatureCard
+          tourId="feature-2"
+          icon="🎯"
+          title="Always in sight"
+          description="Targets are scrolled into view; the tooltip stays inside the safe area."
+        />
+        <FeatureCard
+          tourId="feature-3"
+          icon="♿"
+          title="Accessible"
+          description="Screen-reader focus moves to the tooltip, the back button closes the tour."
+        />
+
+        <Text style={styles.sectionTitle}>Integrations</Text>
+      </View>
+      <Integrations />
+
+      <View style={styles.main}>
+        <View style={styles.spacer} />
+        <View ref={installRef} style={styles.card}>
+          <Text style={styles.cardTitle}>Installation</Text>
+          <Text style={styles.code}>npm i @robertlinde/react-tour-kit</Text>
         </View>
-
-        <View style={styles.main}>
-          <Text style={styles.sectionTitle}>Features</Text>
-
-          <FeatureCard
-            tourId="feature-1"
-            icon="🚀"
-            title="Easy to Use"
-            description="Simple API with TourProvider and useTour hook. Register targets with useTourTarget."
-          />
-
-          <FeatureCard
-            tourId="feature-2"
-            icon="🎨"
-            title="Customizable"
-            description="Theme support, custom tooltip and overlay components. Make it match your brand."
-          />
-
-          <FeatureCard
-            tourId="feature-3"
-            icon="📱"
-            title="Cross-Platform"
-            description="Works with React (web) and React Native. One API, multiple platforms."
-          />
-
-          <TouchableOpacity ref={ctaRef} style={styles.ctaButton} onPress={handleStartTour}>
-            <Text style={styles.ctaButtonText}>
-              {isActive ? `Step ${currentStep + 1} of ${steps.length}` : 'Start Cross-Screen Tour'}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.installSection}>
-            <Text style={styles.installTitle}>Installation</Text>
-            <View style={styles.installCode}>
-              <Text style={styles.installCodeText}>npm i @robertlinde/react-tour-kit</Text>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 }
 
-function SettingsScreen(): React.JSX.Element {
-  const headerRef = useTourTarget<View>('settings-header');
-  const themeRef = useTourTarget<View>('theme-toggle');
-  const notificationsRef = useTourTarget<View>('notifications');
+function SettingsScreen(): ReactNode {
+  const {isCompact, setIsCompact} = use(SettingsContext);
+  const scrollRef = useTourScrollView();
+  const headerRef = useTourTarget('settings-header');
+  const advancedRef = useTourTarget('advanced');
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View ref={headerRef} style={[styles.header, styles.settingsHeader]}>
-          <Text style={styles.headerTitle}>Settings</Text>
-          <Text style={styles.headerSubtitle}>Configure your preferences</Text>
+    <ScrollView ref={scrollRef} style={styles.screen} contentContainerStyle={{paddingBottom: insets.bottom + 24}}>
+      <View ref={headerRef} style={[styles.header, styles.settingsHeader]}>
+        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerSubtitle}>Configure your preferences</Text>
+      </View>
+
+      <View style={styles.main}>
+        <View style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.cardTitle}>Compact tooltip</Text>
+            <Text style={styles.cardText}>Use a custom tooltip component</Text>
+          </View>
+          <Switch testID="compact-switch" value={isCompact} onValueChange={setIsCompact} />
         </View>
 
-        <View style={styles.main}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-
-          <View ref={themeRef} style={styles.settingCard}>
+        {Array.from({length: 12}, (_, index) => (
+          <View key={index} style={styles.settingRow}>
             <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Dark Mode</Text>
-              <Text style={styles.settingDescription}>Toggle between light and dark theme</Text>
+              <Text style={styles.cardTitle}>Option {index + 1}</Text>
+              <Text style={styles.cardText}>A setting you rarely need</Text>
             </View>
-            <TouchableOpacity style={styles.toggleButton}>
-              <Text style={styles.toggleButtonText}>Toggle</Text>
-            </TouchableOpacity>
           </View>
+        ))}
 
-          <View ref={notificationsRef} style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Notifications</Text>
-              <Text style={styles.settingDescription}>Manage notification preferences</Text>
-            </View>
-            <TouchableOpacity style={styles.toggleButton}>
-              <Text style={styles.toggleButtonText}>Configure</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.settingCard}>
-            <View style={styles.settingInfo}>
-              <Text style={styles.settingTitle}>Language</Text>
-              <Text style={styles.settingDescription}>Select your preferred language</Text>
-            </View>
-            <TouchableOpacity style={styles.toggleButton}>
-              <Text style={styles.toggleButtonText}>English</Text>
-            </TouchableOpacity>
+        <View ref={advancedRef} style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.cardTitle}>Experimental features</Text>
+            <Text style={styles.cardText}>At the end of a long list</Text>
           </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </ScrollView>
   );
 }
 
-export default function App(): React.JSX.Element {
+function HelpScreen(): ReactNode {
+  const cardRef = useTourTarget('help-card');
   return (
-    <SafeAreaProvider>
-      <TourProvider>
-        <NavigationContainer>
-          {/* eslint-disable-next-line react/style-prop-object */}
+    <View style={[styles.screen, styles.help]}>
+      <View ref={cardRef} style={styles.card}>
+        <Text style={styles.cardTitle}>Need help?</Text>
+        <Text style={styles.cardText}>This screen is presented as a native modal, above the rest of the app.</Text>
+      </View>
+      {/* Tours can highlight views in this modal: the tour is drawn here while the screen is open. */}
+      <TourHost />
+    </View>
+  );
+}
+
+function Root(): ReactNode {
+  const insets = useSafeAreaInsets();
+  const [isCompact, setIsCompact] = useState(false);
+
+  return (
+    <SettingsContext value={{isCompact, setIsCompact}}>
+      <TourProvider
+        insets={insets}
+        theme={darkTheme}
+        TooltipComponent={isCompact ? CompactTooltip : undefined}
+        onTourEnd={(tourId, info) => {
+          console.info('Tour ended', tourId, info.reason, `at step ${info.stepIndex + 1} of ${info.totalSteps}`);
+        }}
+      >
+        <NavigationContainer ref={navigation}>
           <StatusBar style="light" />
-          <TabBar />
-          <Stack.Navigator
-            screenOptions={{
-              headerShown: false,
-              animation: 'fade',
-            }}
-          >
+          {/* The tab bar is each screen's header; the modal screen has none and covers it. */}
+          <Stack.Navigator screenOptions={{header: () => <TabBar />, animation: 'fade'}}>
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen
+              name="Help"
+              component={HelpScreen}
+              options={{presentation: 'modal', animation: 'default', headerShown: false}}
+            />
           </Stack.Navigator>
         </NavigationContainer>
       </TourProvider>
+    </SettingsContext>
+  );
+}
+
+export default function App(): ReactNode {
+  return (
+    <SafeAreaProvider>
+      <Root />
     </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#1a202c',
-  },
-  scrollContent: {
-    flexGrow: 1,
+    backgroundColor: '#111827',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#1a202c',
-    paddingTop: 50,
+    backgroundColor: '#111827',
     paddingHorizontal: 16,
     paddingBottom: 8,
     gap: 12,
@@ -293,27 +421,26 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
-    backgroundColor: '#2d3748',
+    backgroundColor: '#1f2937',
   },
   tabButtonText: {
-    color: '#a0aec0',
+    color: '#d1d5db',
     fontWeight: '500',
   },
   header: {
     paddingVertical: 32,
     paddingHorizontal: 24,
     alignItems: 'center',
-    backgroundColor: '#667eea',
+    backgroundColor: '#4f46e5',
   },
   settingsHeader: {
-    backgroundColor: '#764ba2',
+    backgroundColor: '#7c3aed',
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
     color: '#ffffff',
     marginBottom: 8,
-    textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 16,
@@ -321,41 +448,61 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   main: {
-    flex: 1,
-    padding: 24,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '600',
-    color: '#f7fafc',
-    marginBottom: 20,
-    textAlign: 'center',
+    color: '#f9fafb',
+    marginTop: 8,
+    marginBottom: 16,
   },
-  featureCard: {
-    backgroundColor: '#2d3748',
+  card: {
+    backgroundColor: '#1f2937',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     alignItems: 'center',
   },
   featureIcon: {
-    fontSize: 40,
-    marginBottom: 12,
-  },
-  featureTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#f7fafc',
+    fontSize: 36,
     marginBottom: 8,
   },
-  featureDescription: {
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#f9fafb',
+    marginBottom: 4,
+  },
+  cardText: {
     fontSize: 14,
-    color: '#a0aec0',
+    color: '#9ca3af',
     textAlign: 'center',
     lineHeight: 20,
   },
+  integrations: {
+    gap: 12,
+    paddingHorizontal: 24,
+  },
+  integration: {
+    width: 160,
+    height: 88,
+    borderRadius: 12,
+    backgroundColor: '#1f2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  spacer: {
+    height: 600,
+  },
+  code: {
+    marginTop: 8,
+    fontFamily: 'monospace',
+    fontSize: 14,
+    color: '#86efac',
+  },
   ctaButton: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#4f46e5',
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 50,
@@ -367,59 +514,50 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-  installSection: {
-    backgroundColor: '#2d3748',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-  },
-  installTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#f7fafc',
-    marginBottom: 12,
-  },
-  installCode: {
-    backgroundColor: '#1a202c',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  installCodeText: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    color: '#68d391',
-  },
-  settingCard: {
-    backgroundColor: '#2d3748',
+  settingRow: {
+    backgroundColor: '#1f2937',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginTop: 12,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
   },
   settingInfo: {
     flex: 1,
   },
-  settingTitle: {
-    fontSize: 16,
+  help: {
+    padding: 24,
+    justifyContent: 'center',
+  },
+  compact: {
+    padding: 14,
+    gap: 6,
+  },
+  compactTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#f9fafb',
+  },
+  compactText: {
+    fontSize: 13,
+    color: '#d1d5db',
+  },
+  compactActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginTop: 4,
+  },
+  compactLink: {
+    color: '#a78bfa',
     fontWeight: '600',
-    color: '#f7fafc',
-    marginBottom: 4,
   },
-  settingDescription: {
-    fontSize: 14,
-    color: '#a0aec0',
+  compactCount: {
+    flex: 1,
+    textAlign: 'center',
+    color: '#9ca3af',
   },
-  toggleButton: {
-    backgroundColor: '#667eea',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
-  },
-  toggleButtonText: {
-    color: '#ffffff',
-    fontWeight: '500',
+  disabled: {
+    opacity: 0.4,
   },
 });

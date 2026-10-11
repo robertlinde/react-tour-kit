@@ -11,11 +11,26 @@
 }
 
 .nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
-  gap: 1rem;
-  padding: 1rem 2rem;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding: 0.75rem 2rem;
   background: #1a202c;
-  justify-content: center;
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+.nav-toggle {
+  color: #cbd5e0;
+  font-size: 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .nav-link {
@@ -177,7 +192,84 @@
   text-decoration: underline;
 }
 
+/* Space so that the install section starts below the fold */
+.spacer {
+  height: 110vh;
+}
+
 /* Settings page styles */
+.advanced-panel {
+  max-height: 260px;
+  overflow: auto;
+  padding: 0.5rem;
+  border: 1px solid #cbd5e0;
+  border-radius: 12px;
+}
+
+/* Custom tooltip example (TooltipComponent) */
+.compact-tooltip {
+  position: relative;
+  width: 280px;
+  max-width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #111827;
+  color: #f9fafb;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.compact-tooltip strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.compact-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px;
+  background: #111827;
+  transform: rotate(45deg);
+}
+
+.compact-tooltip[data-placement='bottom'] .compact-arrow {
+  top: 0;
+}
+
+.compact-tooltip[data-placement='top'] .compact-arrow {
+  bottom: -10px;
+}
+
+.compact-tooltip[data-placement='right'] .compact-arrow {
+  left: 0;
+}
+
+.compact-tooltip[data-placement='left'] .compact-arrow {
+  right: -10px;
+}
+
+.compact-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.compact-actions span {
+  flex: 1;
+  text-align: center;
+  opacity: 0.7;
+}
+
+.compact-actions button {
+  border: 0;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  background: #374151;
+  color: inherit;
+  cursor: pointer;
+}
 .settings-header {
   background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
