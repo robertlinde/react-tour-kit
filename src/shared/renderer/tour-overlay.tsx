@@ -16,7 +16,7 @@ import {
   tourLayout,
   type TourViewState,
 } from '../engine/tour-engine.js';
-import {containsPoint, inflate} from '../geometry/box.util.js';
+import {boxesEqual, containsPoint, inflate} from '../geometry/box.util.js';
 import type {Box, Point, Size} from '../geometry/geometry.type.js';
 import {useTourView} from '../react/use-tour-view.hook.js';
 import type {TourTooltipProps} from '../types/tour-tooltip-props.type.js';
@@ -361,7 +361,7 @@ function useDelayedFlag(isWaiting: boolean, delayMs: number): boolean {
 type SpotlightState = {
   readonly hole: Box | undefined;
   readonly transition: SpotlightTransition | undefined;
-  /** Moving to a new target right now (the tooltip waits a moment before entering). */
+  /** Gliding to a new target (the tooltip waits a moment before entering). */
   readonly isMorphing: boolean;
 };
 
@@ -369,7 +369,8 @@ type SpotlightState = {
  * Where the spotlight's hole is and how it gets there. While the next target is scrolled into
  * view, the hole goes with it (frame by frame, or straight to where it will end up); otherwise it
  * marks the step on screen. Moving to another step is animated; following a target that moves on
- * its own (layout changes, resizing) is instant. Nothing animates before the overlay has appeared.
+ * its own (layout changes, resizing) is instant, like the tooltip, also while the spotlight is
+ * still on its way. Nothing animates before the overlay has appeared.
  */
 function useSpotlight(view: TourViewState, isVisible: boolean, isReducedMotion: boolean): SpotlightState {
   const {shown, phase, revealHighlight, followsScroll} = view;
@@ -385,23 +386,16 @@ function useSpotlight(view: TourViewState, isVisible: boolean, isReducedMotion: 
     setAppearedAtKey(key);
   }
 
-  // A move to a new key keeps animating until it has had time to finish.
-  const [settledKey, setSettledKey] = useState(key);
-  useEffect(() => {
-    if (key === settledKey) {
-      return undefined;
-    }
-
-    const timer = setTimeout(() => {
-      setSettledKey(key);
-    }, motion.morphMs + 50);
-    return (): void => {
-      clearTimeout(timer);
-    };
-  }, [key, settledKey]);
+  // A new key glides to its hole; once the hole changes again, the glide is over.
+  const [glide, setGlide] = useState({key, hole, isOver: false});
+  if (glide.key !== key) {
+    setGlide({key, hole, isOver: false});
+  } else if (!glide.isOver && !boxesEqual(glide.hole, hole)) {
+    setGlide({...glide, isOver: true});
+  }
 
   const hasAppeared = appearedAtKey !== undefined;
-  const isMorphing = hasAppeared && key !== appearedAtKey && key !== settledKey;
+  const isMorphing = hasAppeared && key !== appearedAtKey && !glide.isOver;
   let transition: SpotlightTransition | undefined;
   if (hasAppeared && !isReducedMotion) {
     if (isRevealing && followsScroll) {

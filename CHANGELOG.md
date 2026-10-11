@@ -2,6 +2,12 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.0.2
+
+### Fixed
+
+- When a target moved on its own while the highlight was still gliding to it (right after its step appeared, for example when a screen finishes sliding in), the tooltip jumped to the new place at once but the highlight only caught up a moment later. Both now move together. On React Native, the highlight also always ends up at the latest position when it is moved while an animation is still running.
+
 ## 1.0.1
 
 ### Fixed
