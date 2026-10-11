@@ -39,6 +39,15 @@ const measureTimeoutMs = 1000;
 /** Safety cap for scrolling a target into view. */
 const revealTimeoutMs = 2000;
 /**
+ * Animations can move a target without any event (React Native's native-driver animations, such as
+ * a screen sliding in, and the Web Animations API): until one ends, the target is measured where it
+ * started. So right after a step appears, and before a target out of sight is skipped, the target is
+ * checked every frame until it has not moved for this long...
+ */
+export const silentMoveQuietMs = 1000;
+/** ...or for this long at most. */
+export const silentMoveMaxMs = 3000;
+/**
  * Safety cap for `onBeforeStep`. The tour covers the app meanwhile, so it cannot be waiting for the
  * user; one that never settles would otherwise leave a dimmed screen with no way out.
  */
@@ -388,6 +397,23 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     readonly signal: AbortSignal;
   };
 
+  /** Waits up to `ms` for the target to move away from `from`; resolves `undefined` if it does not. */
+  async function waitForMove(
+    target: TourTarget,
+    from: TargetMeasurement | undefined,
+    signal: AbortSignal,
+    ms: number,
+  ): Promise<{readonly to: TargetMeasurement | undefined} | undefined> {
+    return withTimeout(
+      async (childSignal) => {
+        const to = await options.adapter.waitForMove(target, from, childSignal);
+        return childSignal.aborted ? undefined : {to};
+      },
+      signal,
+      ms,
+    );
+  }
+
   /** Scrolls the target into view and returns its measurement if it is (at least partly) visible. */
   async function reveal(input: RevealInput): Promise<TargetMeasurement | undefined> {
     const {target, signal} = input;
@@ -407,7 +433,27 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     };
 
     try {
-      return await scrollIntoViewAndVerify({...input, startFollowing});
+      let outcome = await scrollIntoViewAndVerify({...input, startFollowing});
+      // Out of sight, the target may still be on its way (see `silentMoveQuietMs`): give it a moment
+      // to arrive before it is skipped.
+      const deadline = Date.now() + silentMoveMaxMs;
+      while (outcome && !outcome.isInSight && Date.now() < deadline) {
+        // eslint-disable-next-line no-await-in-loop -- each attempt starts where the target moved to
+        const move = await waitForMove(
+          target,
+          outcome.measurement,
+          signal,
+          Math.min(silentMoveQuietMs, deadline - Date.now()),
+        );
+        if (!move?.to || signal.aborted) {
+          return undefined;
+        }
+
+        // eslint-disable-next-line no-await-in-loop -- see above
+        outcome = await scrollIntoViewAndVerify({...input, measurement: move.to, startFollowing});
+      }
+
+      return outcome?.isInSight ? outcome.measurement : undefined;
     } finally {
       signal.removeEventListener('abort', stopFollowing);
       stopFollowing();
@@ -431,6 +477,14 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     }
   }
 
+  type RevealOutcome = {
+    /** Where the target is once scrolling has finished. */
+    readonly measurement: TargetMeasurement;
+    /** Fully visible, or partly visible after the instant correction: the step can be shown. */
+    readonly isInSight: boolean;
+  };
+
+  /** Resolves `undefined` when aborted, or when the target is gone. */
   async function scrollIntoViewAndVerify({
     step,
     target,
@@ -438,7 +492,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     size,
     signal,
     startFollowing,
-  }: RevealInput & {readonly startFollowing: () => void}): Promise<TargetMeasurement | undefined> {
+  }: RevealInput & {readonly startFollowing: () => void}): Promise<RevealOutcome | undefined> {
     const {adapter} = options;
     const margins = buildRevealMargins({
       ...tourLayout,
@@ -491,13 +545,13 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       latest.measurement = current;
       const visibility = visibilityOf(current, unobstructed(adapter.getViewport(target)));
       if (visibility === 'full') {
-        return current;
+        return {measurement: current, isInSight: true};
       }
 
       // The first attempt can be cut short (the user scrolled, or the page moved while scrolling);
-      // the second one is instant. Partly visible targets are shown, invisible ones are skipped.
+      // the second one is instant. Partly visible targets are shown, invisible ones are not.
       if (behavior === 'instant') {
-        return visibility === 'partial' ? current : undefined;
+        return {measurement: current, isInSight: visibility === 'partial'};
       }
     }
 
@@ -718,14 +772,39 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
 
     const scope = new AbortController();
     stepScope = scope;
+    const {target} = shown.step;
     options.adapter.observe(
-      shown.step.target,
+      target,
       () => {
         void remeasure(scope.signal);
       },
       scope.signal,
     );
+    if (target !== undefined) {
+      followSilentMoves(target, shownDetails?.measurement, scope.signal).catch(reportError);
+    }
+
     return scope.signal;
+  }
+
+  /** Follows the shown target while it moves without any event (see `silentMoveQuietMs`). */
+  async function followSilentMoves(
+    target: TourTarget,
+    from: TargetMeasurement | undefined,
+    signal: AbortSignal,
+  ): Promise<void> {
+    const deadline = Date.now() + silentMoveMaxMs;
+    let last = from;
+    while (!signal.aborted && Date.now() < deadline) {
+      // eslint-disable-next-line no-await-in-loop -- one move at a time
+      const move = await waitForMove(target, last, signal, Math.min(silentMoveQuietMs, deadline - Date.now()));
+      if (!move || signal.aborted) {
+        return;
+      }
+
+      last = move.to;
+      void remeasure(signal);
+    }
   }
 
   /** `canKeepInView: false` only follows the target (after keepInView's own scroll: no second attempt). */
