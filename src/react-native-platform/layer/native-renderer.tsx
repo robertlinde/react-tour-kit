@@ -58,8 +58,8 @@ const standardEasing = Easing.bezier(...motion.easing);
 const ringWidth = 2;
 const cornerRadius = 8;
 
-function easingOf(transition: SpotlightTransition): (value: number) => number {
-  return transition.easing === 'linear' ? Easing.linear : standardEasing;
+function easingOf(easing: SpotlightTransition['easing']): (value: number) => number {
+  return easing === 'linear' ? Easing.linear : standardEasing;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -233,32 +233,46 @@ function Spotlight({hole, transition, theme}: SpotlightProps): ReactNode {
     bottom: new Animated.Value(target.bottom),
   }));
 
+  // The animation moving the edges, until it has finished.
+  const running = useRef<Animated.CompositeAnimation | undefined>(undefined);
   const durationMs = transition?.durationMs;
   const easingKind = transition?.easing;
   useIsomorphicLayoutEffect(() => {
-    if (durationMs !== undefined && easingKind !== undefined) {
-      const animation = Animated.parallel(
-        edgeKeys.map((key) =>
-          Animated.timing(edges[key], {
-            toValue: target[key],
-            duration: durationMs,
-            easing: easingOf({durationMs, easing: easingKind}),
-            useNativeDriver,
-          }),
-        ),
-      );
-      animation.start();
-      return (): void => {
-        animation.stop();
-      };
+    // Instant changes are set directly, unless an animation is still running: a stopped native
+    // animation reports where it stopped only afterwards, and that report would put the edges back
+    // there. A zero-length animation replaces it instead, and reports last.
+    if (durationMs === undefined && running.current === undefined) {
+      for (const key of edgeKeys) {
+        edges[key].setValue(target[key]);
+      }
+
+      return;
     }
 
-    for (const key of edgeKeys) {
-      edges[key].setValue(target[key]);
-    }
-
-    return undefined;
+    const animation = Animated.parallel(
+      edgeKeys.map((key) =>
+        Animated.timing(edges[key], {
+          toValue: target[key],
+          duration: durationMs ?? 0,
+          easing: easingKind === undefined ? undefined : easingOf(easingKind),
+          useNativeDriver,
+        }),
+      ),
+    );
+    running.current = animation;
+    animation.start(() => {
+      if (running.current === animation) {
+        running.current = undefined;
+      }
+    });
   }, [edges, durationMs, easingKind, target.left, target.top, target.right, target.bottom]);
+
+  useEffect(
+    () => (): void => {
+      running.current?.stop();
+    },
+    [],
+  );
 
   const {radius} = target;
   const span = 2 * Math.max(size.width, size.height) + 4 * tourLayout.highlightPadding;
