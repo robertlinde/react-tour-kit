@@ -1,18 +1,45 @@
 # react-tour-kit
 
-Cross-platform guided tour library for React and React Native. Build interactive onboarding experiences with customizable tooltips, smart positioning, cross-page navigation, and async step actions. Fully themeable with TypeScript support.
+Guided tours for React and React Native that never leave the screen.
 
-## Features
+Highlight any element, explain it in a tooltip, and walk users through your app — across pages and screens, into scroll containers and modals. The tour takes care of everything around it: it waits for targets to appear, scrolls them into view (clear of sticky headers and floating buttons), keeps the tooltip on screen on every device, animates smoothly, and is accessible out of the box.
 
-- **Cross-Platform**: Works with React (web) and React Native
-- **Cross-Page Tours**: Navigate between pages/screens during a tour
-- **Themeable**: Customize colors without building custom components
-- **Fully Customizable**: Replace the default tooltip and overlay with your own components
-- **Smart Positioning**: Automatic tooltip positioning with viewport boundary detection
-- **Keyboard Navigation**: Arrow keys and Escape (web) or hardware back button (Android)
-- **Async Step Actions**: Run async code before each step (e.g., navigate, switch tabs, open dialogs)
-- **Rich End Callbacks**: Know _why_ a tour ended (`completed`, `closed`, `blur`, `escape`, `target-missing`) with global and per-tour handlers
-- **TypeScript First**: Full TypeScript support
+```tsx
+const {startTour} = useTour();
+
+startTour([
+  {target: '[data-tour="search"]', title: 'Search', content: 'Find anything in your workspace.'},
+  {target: '[data-tour="new"]', title: 'Create', content: 'Start a new project here.'},
+]);
+```
+
+- **Simple**: one provider, one hook. Steps are plain objects.
+- **Always in sight**: the target is scrolled into view — through nested scroll containers, horizontal lists, and past sticky headers, cookie banners and floating buttons — and the tooltip stays inside the visible screen and its safe areas, at any size, orientation and zoom.
+- **Across pages and screens**: a step's `onBeforeStep` navigates; the tour waits for the target by itself.
+- **Smooth**: the highlight glides from step to step, with the scroll. Nothing runs while a step is on screen.
+- **Accessible**: a real modal dialog with focus management, keyboard navigation and screen-reader announcements on the web; screen-reader focus, roles and the back button on React Native.
+- **Themeable and customisable**: colours, texts, a content-only custom tooltip, and CSS hooks on the web.
+- **Small and typed**: no dependencies besides React (and React Native), written in TypeScript.
+
+## Contents
+
+- [Installation](#installation)
+- [API at a glance](#api-at-a-glance)
+- [Web](#web)
+- [React Native](#react-native)
+- [Steps](#steps)
+- [Tours across pages and screens](#tours-across-pages-and-screens)
+- [`useTour()`](#usetour)
+- [When a tour ends](#when-a-tour-ends)
+- [Theme](#theme)
+- [Texts and languages](#texts-and-languages)
+- [Custom tooltip](#custom-tooltip)
+- [Styling with CSS (web)](#styling-with-css-web)
+- [What the tour does for you](#what-the-tour-does-for-you)
+- [Testing your app](#testing-your-app)
+- [Requirements](#requirements)
+- [Migrating from 0.x](#migrating-from-0x)
+- [Development](#development)
 
 ## Installation
 
@@ -20,1055 +47,579 @@ Cross-platform guided tour library for React and React Native. Build interactive
 npm install @robertlinde/react-tour-kit
 ```
 
-For React Native, the default overlay also requires `react-native-svg`:
+There is nothing else to install: no `react-native-svg`, no stylesheet to import.
 
-```bash
-npm install react-native-svg
-# or, with Expo:
-npx expo install react-native-svg
-```
+| Platform     | Import from                                | Targets                                         |
+| ------------ | ------------------------------------------ | ----------------------------------------------- |
+| Web          | `@robertlinde/react-tour-kit/react`        | CSS selectors such as `'[data-tour="welcome"]'` |
+| React Native | `@robertlinde/react-tour-kit/react-native` | ids registered with `useTourTarget`             |
 
-(Not needed if you're using web only, or if you provide a custom `OverlayComponent`.)
+## API at a glance
 
-## Live Demos
+Everything you pass to the tour, with links to the details.
 
-Try the demos locally:
+**`<TourProvider>`**: all props are optional.
 
-```bash
-# Web demo (React + React Router)
-cd demos/react
-npm install
-npm run dev
+| Prop                    | Type                                                | Default       | Details                                     |
+| ----------------------- | --------------------------------------------------- | ------------- | ------------------------------------------- |
+| `theme`                 | `TourTheme`: colours                                | blue on white | [Theme](#theme)                             |
+| `i18n`                  | `TourI18n`: texts                                   | English       | [Texts and languages](#texts-and-languages) |
+| `onTourEnd`             | `(tourId, info) => void`                            | –             | [When a tour ends](#when-a-tour-ends)       |
+| `closeOnOverlayClick`   | `boolean`: a press on the dimmed area ends the tour | `true`        | [When a tour ends](#when-a-tour-ends)       |
+| `TooltipComponent`      | `ComponentType<TourTooltipProps>`                   | built-in      | [Custom tooltip](#custom-tooltip)           |
+| `insets` (React Native) | `{top, right, bottom, left}`                        | safe defaults | [React Native](#react-native)               |
 
-# React Native demo (Expo + React Navigation)
-cd demos/react-native
-npm install
-npm run ios  # or npm run android
-```
+**`startTour(steps, tourId?, options?)`**, from [`useTour()`](#usetour):
 
-## Platform Guide
+| Argument            | Type                     | Details                                                                     |
+| ------------------- | ------------------------ | --------------------------------------------------------------------------- |
+| `steps`             | `TourStep[]`             | below                                                                       |
+| `tourId`            | `string`                 | names the tour in `onTourEnd`; starting the running tour again does nothing |
+| `options.onTourEnd` | `(tourId, info) => void` | for this tour only, before the provider's                                   |
 
-| Platform         | Import from                   | Target elements with                          |
-| ---------------- | ----------------------------- | --------------------------------------------- |
-| **React (Web)**  | `react-tour-kit/react`        | CSS selectors (e.g., `[data-tour="welcome"]`) |
-| **React Native** | `react-tour-kit/react-native` | `useTourTarget` hook or refs                  |
+**`TourStep`**, see [Steps](#steps):
 
----
+| Field          | Type                                                                           | Default            |
+| -------------- | ------------------------------------------------------------------------------ | ------------------ |
+| `target`       | web: CSS selector or element ref; React Native: `useTourTarget` id or view ref | none: centred step |
+| `title`        | `ReactNode`                                                                    | required           |
+| `content`      | `ReactNode`                                                                    | required           |
+| `placement`    | `'top' \| 'bottom' \| 'left' \| 'right'`                                       | `'bottom'`         |
+| `onBeforeStep` | `(target, {signal}) => void \| Promise<void>`                                  | –                  |
 
-## React (Web)
+**React Native only**: `useTourTarget(id)` registers a view as a target, `useTourScrollView(ref?)` lets the tour scroll a list, and `<TourHost />` draws the tour in modal screens. See [React Native](#react-native).
 
-### Quick Start
+## Web
 
-#### 1. Wrap your app with TourProvider
+**1. Wrap your app in `TourProvider`** — inside your router if steps navigate between pages.
 
 ```tsx
 import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
-function App() {
+export function App() {
   return (
-    <TourProvider>
-      <YourApp />
-    </TourProvider>
+    <BrowserRouter>
+      <TourProvider>
+        <Routes>{/* … */}</Routes>
+      </TourProvider>
+    </BrowserRouter>
   );
 }
 ```
 
-#### 2. Add data attributes to target elements
+**2. Mark the elements** you want to highlight. Any CSS selector works; data attributes keep the tour independent of your styling.
 
 ```tsx
-function Dashboard() {
-  return (
-    <div>
-      <header data-tour="welcome">
-        <h1>Dashboard</h1>
-      </header>
-
-      <nav data-tour="sidebar">{/* Navigation items */}</nav>
-
-      <button data-tour="settings">Settings</button>
-    </div>
-  );
-}
+<nav data-tour="sidebar">…</nav>
+<button data-tour="settings">Settings</button>
 ```
 
-#### 3. Start a tour
+**3. Start a tour** from anywhere inside the provider.
 
 ```tsx
-import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
+import {type TourStep, useTour} from '@robertlinde/react-tour-kit/react';
 
-const tourSteps: TourStep[] = [
+const onboarding: TourStep[] = [
   {
-    target: '[data-tour="welcome"]', // CSS selector
     title: 'Welcome!',
-    content: 'This is your dashboard. Let me show you around.',
-    placement: 'bottom',
+    content: 'Let me show you around.', // no target: shown in the centre of the screen
   },
   {
     target: '[data-tour="sidebar"]',
     title: 'Navigation',
-    content: 'Use the sidebar to navigate between different sections.',
+    content: 'Everything you need is one click away.',
     placement: 'right',
   },
   {
     target: '[data-tour="settings"]',
     title: 'Settings',
-    content: 'Click here to customize your preferences.',
-    placement: 'left',
+    content: 'Make it yours.',
   },
 ];
 
-function WelcomeButton() {
+function StartButton() {
   const {startTour} = useTour();
-
-  return <button onClick={() => startTour(tourSteps, 'onboarding')}>Start Tour</button>;
+  return <button onClick={() => startTour(onboarding, 'onboarding')}>Take the tour</button>;
 }
 ```
 
-### Keyboard Navigation (Web)
+While a tour is open, the page cannot be scrolled away from it with the wheel, touch or keyboard (a classic, always-visible scrollbar stays usable, as browsers do not let pages block it; the tour then keeps the target in view), and the tour is announced as a modal dialog. Keyboard: <kbd>→</kbd> next, <kbd>←</kbd> back (swapped in right-to-left pages), <kbd>Esc</kbd> closes. Presses, focus and keys inside the tour do not reach your page's own listeners, so a menu that closes on "click outside" stays open while a step points at it. Opening the tour (a modal dialog) does close elements shown with `popover="auto"`: for a popover a step points at, use `popover="manual"`.
 
-| Key             | Action        |
-| --------------- | ------------- |
-| `→` Arrow Right | Next step     |
-| `←` Arrow Left  | Previous step |
-| `Escape`        | Close tour    |
+### Next.js
 
----
-
-## React Native
-
-### Quick Start
-
-#### 1. Wrap your app with TourProvider
+The web entry is marked `'use client'`, so `TourProvider` can be rendered directly in a server component such as the root layout. It renders nothing extra on the server.
 
 ```tsx
-import {TourProvider} from '@robertlinde/react-tour-kit/react-native';
+// app/layout.tsx
+import {TourProvider} from '@robertlinde/react-tour-kit/react';
 
-function App() {
+export default function RootLayout({children}: {children: React.ReactNode}) {
   return (
-    <TourProvider>
-      <YourApp />
-    </TourProvider>
+    <html lang="en">
+      <body>
+        <TourProvider>{children}</TourProvider>
+      </body>
+    </html>
   );
 }
 ```
 
-#### 2. Register target elements with useTourTarget
+Components that call `useTour()` must be client components (`'use client'`).
+
+## React Native
+
+**1. Wrap your app in `TourProvider`** at the root, around your navigation container. It has to fill the window, so place it **outside** any `SafeAreaView` or padded container and pass the safe-area insets instead:
 
 ```tsx
-import {View} from 'react-native';
+import {NavigationContainer} from '@react-navigation/native';
+import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {TourProvider} from '@robertlinde/react-tour-kit/react-native';
+
+function Root() {
+  const insets = useSafeAreaInsets();
+  return (
+    <TourProvider insets={insets}>
+      <NavigationContainer>{/* … */}</NavigationContainer>
+    </TourProvider>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Root />
+    </SafeAreaProvider>
+  );
+}
+```
+
+Without `insets`, conservative defaults keep the tooltip clear of the notch, Dynamic Island, status bar and home indicator.
+
+**2. Register the views** you want to highlight with `useTourTarget`, and use the id as the step's `target`:
+
+```tsx
+import {Pressable, Text} from 'react-native';
 import {useTourTarget} from '@robertlinde/react-tour-kit/react-native';
 
-function MyComponent() {
-  const welcomeRef = useTourTarget<View>('welcome-button');
-  const settingsRef = useTourTarget<View>('settings-button');
-
+function SettingsButton() {
+  const ref = useTourTarget('settings');
   return (
-    <View>
-      <TouchableOpacity ref={welcomeRef}>
-        <Text>Welcome</Text>
-      </TouchableOpacity>
+    <Pressable ref={ref} onPress={openSettings}>
+      <Text>Settings</Text>
+    </Pressable>
+  );
+}
+```
 
-      <TouchableOpacity ref={settingsRef}>
-        <Text>Settings</Text>
-      </TouchableOpacity>
+The ref is typed for `View` and components that forward their ref to one, such as `Pressable`. For other components, pass a type argument: `useTourTarget<MyComponentRef>('id')`. On the Old Architecture, Android leaves out views that only lay out their children; if a plain `View` target is never found there, give it `collapsable={false}`.
+
+**3. Let the tour scroll your lists.** For targets that can be off screen, register the scroll views around them with `useTourScrollView` — it works with `ScrollView`, `FlatList`, `SectionList` and their animated versions, vertical and horizontal, nested too:
+
+```tsx
+import {FlatList, ScrollView} from 'react-native';
+import {useTourScrollView} from '@robertlinde/react-tour-kit/react-native';
+
+function Home() {
+  const scrollRef = useTourScrollView();
+  return <ScrollView ref={scrollRef}>…</ScrollView>;
+}
+
+function Carousel() {
+  const listRef = useTourScrollView<FlatList<Item>>();
+  return <FlatList ref={listRef} horizontal data={items} renderItem={renderItem} />;
+}
+```
+
+If the list already has a ref, pass it in: `useTourScrollView(existingRef)`. Items of a virtualised list that are not rendered yet cannot be found; scroll to them in the step's `onBeforeStep` (for example with `scrollToIndex`).
+
+**4. Start a tour** exactly as on the web:
+
+```tsx
+import {type TourStep, useTour} from '@robertlinde/react-tour-kit/react-native';
+
+const steps: TourStep[] = [
+  {target: 'profile', title: 'Your profile', content: 'Tap here to edit it.'},
+  {target: 'settings', title: 'Settings', content: 'Make it yours.', placement: 'top'},
+];
+
+const {startTour} = useTour();
+startTour(steps, 'onboarding');
+```
+
+The Android back button closes the tour. Screen readers move to the tooltip and announce each step.
+
+### Modal screens
+
+The tour is drawn inside your app's root view. Screens presented as native modals (react-navigation's `presentation: 'modal'`, or a React Native `<Modal>`) are drawn above that view, so to highlight something in them, add a `<TourHost />` as the last child of the modal screen:
+
+```tsx
+import {TourHost} from '@robertlinde/react-tour-kit/react-native';
+
+function HelpScreen() {
+  return (
+    <View style={{flex: 1}}>
+      {/* … */}
+      <TourHost />
     </View>
   );
 }
 ```
 
-#### 3. Start a tour
+While the screen is open, the tour is drawn there; when it closes, the tour returns to the root. VoiceOver then ignores the rest of the modal screen while a step is shown (TalkBack can still reach it).
+
+Inside a React Native `<Modal>`, the Android back button goes to the modal's `onRequestClose`, not to the tour. End the tour there first:
 
 ```tsx
-import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react-native';
+const {isActive, endTour} = useTour();
 
-const tourSteps: TourStep[] = [
-  {
-    target: 'welcome-button', // String ID from useTourTarget
-    title: 'Welcome!',
-    content: 'This is your dashboard. Let me show you around.',
-    placement: 'bottom',
-  },
-  {
-    target: 'settings-button',
-    title: 'Settings',
-    content: 'Tap here to customize your preferences.',
-    placement: 'left',
-  },
-];
-
-function StartTourButton() {
-  const {startTour} = useTour();
-
-  return (
-    <TouchableOpacity onPress={() => startTour(tourSteps, 'onboarding')}>
-      <Text>Start Tour</Text>
-    </TouchableOpacity>
-  );
-}
+<Modal visible={isOpen} onRequestClose={() => (isActive ? endTour() : setIsOpen(false))}>
+  {/* … */}
+  <TourHost />
+</Modal>;
 ```
 
-### Using Refs Directly (React Native)
+### Android navigation bar
 
-You can also pass refs directly instead of string IDs:
+The tour draws in your app's own window, so the system navigation bar looks exactly as it does in your app. Since Android 15 apps draw edge to edge, and with 3-button navigation Android puts a translucent contrast scrim behind the buttons. To keep the bar transparent (so the tour's dimmed overlay shows behind the buttons), turn the scrim off:
 
-```tsx
-import {useRef} from 'react';
-import {useTour, type TourStep} from '@robertlinde/react-tour-kit/react-native';
+- **Expo**: add the [`expo-navigation-bar`](https://docs.expo.dev/versions/latest/sdk/navigation-bar/) config plugin to your app config, then rebuild the native app:
 
-function MyComponent() {
-  const buttonRef = useRef(null);
+  ```json
+  {
+    "expo": {
+      "plugins": [["expo-navigation-bar", {"enforceContrast": false}]]
+    }
+  }
+  ```
 
-  const steps: TourStep[] = [
-    {
-      target: buttonRef, // Pass ref directly
-      title: 'Welcome!',
-      content: 'Tap here to get started.',
-    },
-  ];
+- **Bare React Native**: in `MainActivity`, after `super.onCreate(…)`:
 
-  return <TouchableOpacity ref={buttonRef}>...</TouchableOpacity>;
-}
+  ```kotlin
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    window.isNavigationBarContrastEnforced = false
+  }
+  ```
+
+(0.x drew the tour in a React Native `<Modal>`, which opens its own window. Under edge to edge, React Native forces the contrast scrim on in that window, which showed as a white strip. 1.0 no longer uses a modal.)
+
+## Steps
+
+```ts
+type TourStep = {
+  target?: TourTarget; // what to highlight; leave it out for a step in the centre of the screen
+  title: ReactNode;
+  content: ReactNode;
+  placement?: 'top' | 'bottom' | 'left' | 'right'; // preferred side, default 'bottom'
+  onBeforeStep?: (target, {signal}) => void | Promise<void>;
+};
 ```
 
-### Navigation (React Native)
+- **`target`**: on the web a CSS selector (the first _visible_ match is used) or a ref to an element; on React Native an id registered with `useTourTarget`, or a ref to a view.
+- **`title` and `content`** can be any React content (text, links, images).
+- **`placement`** is a preference. If there is not enough room on that side, the tooltip moves to the opposite side, then to the roomier of the remaining sides; it is never pushed off screen.
+- **`onBeforeStep`** runs before the step is shown — to navigate, open a menu, switch a tab, or load data. The tour waits for its promise, then for the target to appear (up to 5 seconds), so there is no need to poll or add delays. It receives the step's target and an `AbortSignal` that aborts when the step is abandoned (the user moves on or closes the tour). Make it idempotent: it runs again when the user comes back to the step. If it throws or rejects, the tour ends with the reason `'error'`.
 
-| Action        | Trigger                                           |
-| ------------- | ------------------------------------------------- |
-| Next step     | Tap "Next" button                                 |
-| Previous step | Tap "Back" button                                 |
-| Close tour    | Tap close button, overlay, or Android back button |
+**Missing targets**: if a step's target does not appear within 5 seconds, or cannot be scrolled into view, the step is skipped (with a warning in development) and the tour continues in the direction the user was going. Going back past the first step returns to the step the user came from. If no step can be shown at all, the tour ends with `'target-missing'`.
 
----
+**Carousels and sliders**: the tour scrolls everything users can scroll, but never an element with `overflow: hidden` — what such an element shows is up to your app (carousels, sliders, off-canvas menus), and scrolling it would leave it out of step with your app's state. Bring the target into view in `onBeforeStep`, for example by moving the carousel to its slide.
 
-## Cross-Page/Cross-Screen Tours
+## Tours across pages and screens
 
-Tours can span multiple pages (web) or screens (React Native). The key is to:
-
-1. Wrap your **router/navigator** with `TourProvider`
-2. Use `onBeforeStep` to navigate before showing a step
+Put `TourProvider` around your router or navigator, and let each step open its page in `onBeforeStep`. Making every step open its own page keeps going back working too.
 
 ### Web (React Router)
 
 ```tsx
-import {BrowserRouter, useNavigate} from 'react-router-dom';
-import {TourProvider, useTour, type TourStep} from '@robertlinde/react-tour-kit/react';
+import {useNavigate} from 'react-router-dom';
+import {type TourStep, useTour} from '@robertlinde/react-tour-kit/react';
 
-// TourProvider wraps the router
-function App() {
-  return (
-    <TourProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </BrowserRouter>
-    </TourProvider>
-  );
-}
-
-// Define steps with navigation
-function Home() {
+function useOnboarding() {
   const navigate = useNavigate();
   const {startTour} = useTour();
 
-  const steps: TourStep[] = [
-    {
-      target: '[data-tour="welcome"]',
-      title: 'Welcome',
-      content: 'Let me show you around.',
-      placement: 'bottom',
+  // Opens a page unless it is already open (no duplicate history entries).
+  const on = (path: string, step: TourStep): TourStep => ({
+    ...step,
+    onBeforeStep() {
+      if (location.pathname !== path) {
+        navigate(path);
+      }
     },
-    {
-      target: '[data-tour="nav-settings"]',
-      title: 'Settings Link',
-      content: "Now let's visit the settings page.",
-      placement: 'bottom',
-      // Navigate before the NEXT step shows, then poll until its target mounts
-      onBeforeStep: async (target) => {
-        navigate('/settings');
-        while (!document.querySelector(target as string)) {
-          await new Promise((r) => setTimeout(r, 50));
-        }
-      },
-    },
-    {
-      target: '[data-tour="theme-toggle"]',
-      title: 'Theme Settings',
-      content: 'This element is on the Settings page!',
-      placement: 'right',
-    },
-    {
-      target: '[data-tour="welcome"]',
-      title: 'Back Home',
-      content: 'And we can navigate back.',
-      placement: 'bottom',
-      onBeforeStep: async (target) => {
-        navigate('/');
-        while (!document.querySelector(target as string)) {
-          await new Promise((r) => setTimeout(r, 50));
-        }
-      },
-    },
-  ];
+  });
 
-  return <button onClick={() => startTour(steps, 'cross-page')}>Start Tour</button>;
+  return () =>
+    startTour(
+      [
+        on('/', {target: '[data-tour="projects"]', title: 'Projects', content: 'All your work.'}),
+        on('/settings', {target: '[data-tour="theme"]', title: 'Theme', content: 'Light or dark?'}),
+        on('/', {target: '[data-tour="help"]', title: 'Help', content: 'We are here for you.'}),
+      ],
+      'onboarding',
+    );
 }
 ```
 
 ### React Native (React Navigation)
 
 ```tsx
-import {NavigationContainer, useNavigation} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {TourProvider, useTour, useTourTarget, type TourStep} from '@robertlinde/react-tour-kit/react-native';
+import {CommonActions, createNavigationContainerRef, StackActions} from '@react-navigation/native';
 
-const Stack = createNativeStackNavigator();
+export const navigation = createNavigationContainerRef<Screens>(); // <NavigationContainer ref={navigation}>
 
-// TourProvider wraps the navigator
-function App() {
-  return (
-    <TourProvider>
-      <NavigationContainer>
-        <Stack.Navigator>
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Settings" component={SettingsScreen} />
-        </Stack.Navigator>
-      </NavigationContainer>
-    </TourProvider>
-  );
+/** Shows a screen: goes back to it when it is already open, otherwise opens it. */
+function show(screen: keyof Screens) {
+  if (!navigation.isReady() || navigation.getCurrentRoute()?.name === screen) {
+    return;
+  }
+
+  const isOpen = navigation.getRootState()?.routes.some((route) => route.name === screen) ?? false;
+  navigation.dispatch(isOpen ? StackActions.popTo(screen) : CommonActions.navigate(screen));
 }
 
-// Define steps with navigation
-function HomeScreen() {
-  const navigation = useNavigation();
-  const {startTour} = useTour();
-  const headerRef = useTourTarget<View>('header');
-
-  const steps: TourStep[] = [
-    {
-      target: 'header',
-      title: 'Welcome',
-      content: 'Let me show you around.',
-      placement: 'bottom',
-    },
-    {
-      target: 'settings-header',
-      title: 'Settings Screen',
-      content: 'This element is on the Settings screen!',
-      placement: 'bottom',
-      onBeforeStep: async (target) => {
-        navigation.navigate('Settings');
-        await new Promise((r) => setTimeout(r, 300)); // Wait for animation
-      },
-    },
-    {
-      target: 'header',
-      title: 'Back Home',
-      content: 'And we can navigate back.',
-      placement: 'bottom',
-      onBeforeStep: async (target) => {
-        navigation.navigate('Home');
-        await new Promise((r) => setTimeout(r, 300));
-      },
-    },
-  ];
-
-  return (
-    <View>
-      <View ref={headerRef}>{/* ... */}</View>
-      <Button onPress={() => startTour(steps, 'cross-screen')} title="Start Tour" />
-    </View>
-  );
-}
-
-function SettingsScreen() {
-  const headerRef = useTourTarget<View>('settings-header');
-
-  return <View ref={headerRef}>{/* ... */}</View>;
-}
-```
-
-### Important Notes for Cross-Page Tours
-
-1. **TourProvider placement**: Must wrap your router/navigator so tour state persists across navigation
-2. **Target availability**: Targets must be mounted when their step is active. Use `onBeforeStep` to navigate first
-3. **Wait for navigation**: On web, poll on the `target` argument in `onBeforeStep` (e.g. `while (!document.querySelector(target))`) instead of a fixed delay. On React Native, a short delay is usually fine because navigation animations have a known duration.
-4. **Persistent elements**: Elements like navigation bars that exist on all pages don't need `onBeforeStep`
-
----
-
-## API Reference
-
-### TourProvider
-
-The provider component that enables tour functionality throughout your app.
-
-```tsx
-import {TourProvider} from '@robertlinde/react-tour-kit/react';
-
-<TourProvider
-  TooltipComponent={CustomTooltip} // Optional: custom tooltip component
-  OverlayComponent={CustomOverlay} // Optional: custom overlay component
-  theme={theme} // Optional: theme configuration
-  onTourEnd={(tourId, info) => {
-    // Optional: callback when tour ends
-    // info.reason is one of: 'completed' | 'closed' | 'blur' | 'escape' | 'target-missing'
-    console.log(`Tour ${tourId} ended: ${info.reason} at step ${info.stepIndex + 1}/${info.totalSteps}`);
-  }}
->
-  {children}
-</TourProvider>;
-```
-
-#### Props
-
-| Prop                  | Type                                          | Description                                                                                                                                   |
-| --------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `children`            | `ReactNode`                                   | Your application content                                                                                                                      |
-| `theme`               | `TourTheme`                                   | Theme configuration for colors (see Theming section)                                                                                          |
-| `i18n`                | `TourI18n`                                    | Internationalization options for labels (see i18n section)                                                                                    |
-| `TooltipComponent`    | `ForwardRefExoticComponent<TourTooltipProps>` | Custom tooltip component (must use forwardRef)                                                                                                |
-| `OverlayComponent`    | `ComponentType<TourOverlayProps>`             | Custom overlay component                                                                                                                      |
-| `onTourEnd`           | `TourEndCallback`                             | Callback fired when any tour ends. Receives `(tourId, info)` with the reason and step context (see [Tour End Callbacks](#tour-end-callbacks)) |
-| `closeOnOverlayClick` | `boolean`                                     | Whether clicking the overlay closes the tour. When `false`, users must click the ✕ button. Defaults to `true`                                 |
-
-### useTour Hook
-
-Access the tour context from any component.
-
-```tsx
-import {useTour} from '@robertlinde/react-tour-kit/react';
-
-function MyComponent() {
-  const {
-    isActive, // boolean: is a tour currently running?
-    currentStep, // number: current step index (0-based)
-    steps, // TourStep[]: all steps in current tour
-    currentTourId, // string | null: ID of current tour
-    startTour, // (steps: TourStep[], tourId?: string, options?: StartTourOptions) => void
-    endTour, // () => void
-    nextStep, // () => void
-    prevStep, // () => void
-    goToStep, // (step: number) => void
-  } = useTour();
-}
-```
-
-### TourStep
-
-Define the steps in your tour.
-
-```tsx
-type TourStep = {
-  target: TourTarget; // Target element (see below)
-  title: string; // Step title
-  content: string; // Step description/content
-  placement?: 'top' | 'bottom' | 'left' | 'right'; // Tooltip position (default: 'bottom')
-  onBeforeStep?: (target: TourTarget) => void | Promise<void>; // Async action before showing step; receives the step's target so you can poll until it mounts
-};
-
-// Target types differ by platform:
-// Web: CSS selector string (e.g., '[data-tour="welcome"]', '#my-button')
-// React Native: String ID (registered via useTourTarget) or RefObject
-type TourTarget = string | RefObject<unknown>;
-```
-
-### Tour End Callbacks
-
-Tours can end in several ways, and callbacks receive context about **why** and **where**. You can register an end handler at two levels: globally on the provider, or per-tour via `startTour`.
-
-#### Callback signature
-
-```tsx
-type TourEndReason =
-  | 'completed' // User clicked Finish on the last step
-  | 'closed' // User clicked the close (✕) button, or `endTour()` was called programmatically
-  | 'blur' // User clicked/tapped the overlay outside the highlighted element
-  | 'escape' // User pressed Escape (web only)
-  | 'target-missing'; // The step's target element could not be found and the tour had to end
-
-type TourEndInfo = {
-  reason: TourEndReason;
-  stepIndex: number; // Zero-based index of the step the user was on
-  step: TourStep; // The step object the user was on
-  totalSteps: number; // Total number of steps in the tour
-};
-
-type TourEndCallback = (tourId: string | undefined, info: TourEndInfo) => void;
-```
-
-> **Note (React Native):** the `'escape'` reason only fires on web. On Android, the hardware back button is reported as `'closed'`.
-
-#### Provider-level callback
-
-Use the provider-level `onTourEnd` for cross-cutting concerns that should run for every tour — analytics, logging, etc.
-
-```tsx
-<TourProvider
-  onTourEnd={(tourId, info) => {
-    analytics.track('tour_ended', {
-      tourId,
-      reason: info.reason,
-      lastStep: info.stepIndex + 1,
-      totalSteps: info.totalSteps,
-    });
-  }}
->
-  <App />
-</TourProvider>
-```
-
-#### Per-tour callback
-
-Pass an `onTourEnd` in the options argument to `startTour` when you need tour-specific end logic. This keeps the logic colocated with the tour that owns it, instead of dispatching on `tourId` in the provider callback.
-
-```tsx
-function WelcomeButton() {
-  const {startTour} = useTour();
-
-  const handleStart = () => {
-    startTour(onboardingSteps, 'onboarding', {
-      onTourEnd: (tourId, info) => {
-        if (info.reason === 'completed') {
-          markOnboardingComplete();
-        }
-      },
-    });
-  };
-
-  return <button onClick={handleStart}>Start Onboarding</button>;
-}
-```
-
-#### Precedence
-
-When both a provider-level and a per-tour callback are defined, **the per-tour callback fires first**, then the provider-level callback. Both always run on every end — the per-tour callback does not suppress the provider-level one.
-
-```tsx
-// Provider:
-onTourEnd = (id, info) => console.log('provider', id, info.reason);
-
-// Tour:
-startTour(steps, 'onboarding', {
-  onTourEnd: (id, info) => console.log('tour', id, info.reason),
+const on = (screen: keyof Screens, step: TourStep): TourStep => ({
+  ...step,
+  onBeforeStep() {
+    show(screen);
+  },
 });
 
-// On end, logs in order:
-// 'tour'     'onboarding' 'completed'
-// 'provider' 'onboarding' 'completed'
-```
-
-#### Reacting to specific reasons
-
-Branch on `info.reason` to distinguish outcomes:
-
-```tsx
-onTourEnd={(tourId, info) => {
-  switch (info.reason) {
-    case 'completed':
-      markComplete(tourId);
-      break;
-    case 'blur':
-    case 'closed':
-    case 'escape':
-      trackDismissal(tourId, info.reason, info.stepIndex);
-      break;
-    case 'target-missing':
-      reportBug(`Tour ${tourId} broke at step ${info.stepIndex}: ${info.step.target}`);
-      break;
-  }
-}}
-```
-
-## Theming
-
-Customize the look of the default tooltip and overlay without building custom components.
-
-### Theme Options
-
-```tsx
-import {TourProvider, type TourTheme} from '@robertlinde/react-tour-kit/react';
-
-const theme: TourTheme = {
-  primaryColor: '#10b981', // Buttons, step badge, highlight border (default: '#3b82f6')
-  tooltipBackground: '#ffffff', // Tooltip background color (default: '#ffffff')
-  titleColor: '#1f2937', // Title text color (default: '#1f2937')
-  contentColor: '#4b5563', // Body text color (default: '#4b5563')
-  overlayColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent overlay (default: 'rgba(0, 0, 0, 0.5)')
-};
-
-function App() {
-  return (
-    <TourProvider theme={theme}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
-### Theme Examples
-
-**Dark theme:**
-
-```tsx
-const darkTheme: TourTheme = {
-  primaryColor: '#8b5cf6',
-  tooltipBackground: '#1f2937',
-  titleColor: '#f9fafb',
-  contentColor: '#d1d5db',
-  overlayColor: 'rgba(0, 0, 0, 0.7)',
-};
-```
-
-**Brand colors:**
-
-```tsx
-const brandTheme: TourTheme = {
-  primaryColor: '#your-brand-color',
-};
-// Other values use defaults
-```
-
-### React Native
-
-Theming works the same way in React Native:
-
-```tsx
-import {TourProvider, type TourTheme} from '@robertlinde/react-tour-kit/react-native';
-
-const theme: TourTheme = {
-  primaryColor: '#10b981',
-  overlayColor: 'rgba(0, 0, 0, 0.7)',
-};
-
-function App() {
-  return (
-    <TourProvider theme={theme}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
----
-
-## Internationalization (i18n)
-
-Customize all text labels and templates to support different languages or match your app's terminology.
-
-### i18n Options
-
-```tsx
-import {TourProvider, type TourI18n} from '@robertlinde/react-tour-kit/react';
-
-const i18n: TourI18n = {
-  nextLabel: 'Next', // "Next" button text
-  prevLabel: 'Back', // "Back" button text
-  finishLabel: 'Finish', // Button text on last step (default: 'Finish' on web, 'Done' on native)
-  stepCounterTemplate: '{current} / {total}', // Step counter format (use {current} and {total} placeholders)
-  closeAriaLabel: 'Close tour', // Accessibility label for close button (web only)
-  dotAriaLabelTemplate: 'Go to step {step}', // Accessibility label template for step dots (web only)
-};
-
-function App() {
-  return (
-    <TourProvider i18n={i18n}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
-### i18n Examples
-
-**Spanish:**
-
-```tsx
-const spanishI18n: TourI18n = {
-  nextLabel: 'Siguiente',
-  prevLabel: 'Anterior',
-  finishLabel: 'Finalizar',
-  stepCounterTemplate: 'Paso {current} de {total}',
-  closeAriaLabel: 'Cerrar tour',
-  dotAriaLabelTemplate: 'Ir al paso {step}',
-};
-```
-
-**German:**
-
-```tsx
-const germanI18n: TourI18n = {
-  nextLabel: 'Weiter',
-  prevLabel: 'Zurück',
-  finishLabel: 'Fertig',
-  stepCounterTemplate: 'Schritt {current} von {total}',
-  closeAriaLabel: 'Tour schließen',
-  dotAriaLabelTemplate: 'Zu Schritt {step} gehen',
-};
-```
-
-**Custom terminology:**
-
-```tsx
-const customI18n: TourI18n = {
-  nextLabel: 'Continue',
-  prevLabel: 'Go Back',
-  finishLabel: 'Got it!',
-  stepCounterTemplate: 'Step {current} of {total}',
-};
-// Other values use defaults
-```
-
-### React Native
-
-i18n works the same way in React Native:
-
-```tsx
-import {TourProvider, type TourI18n} from '@robertlinde/react-tour-kit/react-native';
-
-const i18n: TourI18n = {
-  nextLabel: 'Siguiente',
-  prevLabel: 'Anterior',
-  finishLabel: 'Listo',
-  stepCounterTemplate: 'Paso {current} de {total}',
-};
-
-function App() {
-  return (
-    <TourProvider i18n={i18n}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
-### Default Values
-
-| Option                 | Web Default             | React Native Default          |
-| ---------------------- | ----------------------- | ----------------------------- |
-| `nextLabel`            | `'Next'`                | `'Next'`                      |
-| `prevLabel`            | `'Back'`                | `'Back'`                      |
-| `finishLabel`          | `'Finish'`              | `'Done'`                      |
-| `stepCounterTemplate`  | `'{current} / {total}'` | `'Step {current} of {total}'` |
-| `closeAriaLabel`       | `'Close tour'`          | N/A                           |
-| `dotAriaLabelTemplate` | `'Go to step {step}'`   | N/A                           |
-
----
-
-## Advanced Usage
-
-### Async Step Actions
-
-Run code before a step is shown. Useful for opening dialogs, switching tabs, navigating, etc.
-
-```tsx
-const steps: TourStep[] = [
-  {
-    target: '[data-tour="settings-tab"]',
-    title: 'Settings Tab',
-    content: 'Click here to access settings.',
-  },
-  {
-    target: '[data-tour="notifications-panel"]',
-    title: 'Notifications',
-    content: 'Configure your notification preferences here.',
-    onBeforeStep: async (target) => {
-      // Open the settings tab before showing this step
-      document.querySelector('[data-tour="settings-tab"]')?.click();
-      // Poll until the panel actually mounts instead of guessing a delay
-      while (!document.querySelector(target as string)) {
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-    },
-  },
+const steps = [
+  on('Home', {target: 'projects', title: 'Projects', content: 'All your work.'}),
+  on('Settings', {target: 'theme', title: 'Theme', content: 'Light or dark?'}),
 ];
 ```
 
-### Custom Tooltip Component
+The [demos](#development) contain complete, working examples of both.
 
-Create your own tooltip with your design system.
+## `useTour()`
 
-**Web:**
+```ts
+const {
+  isActive, // boolean: a tour is running
+  currentStep, // number: index of the step on screen
+  steps, // readonly TourStep[]: the steps of the running tour
+  currentTourId, // string | undefined
+  startTour, // (steps, tourId?, options?) => void
+  endTour, // () => void — ends with the reason 'closed'
+  nextStep, // () => void — completes the tour on the last step
+  prevStep, // () => void
+  goToStep, // (index: number) => void
+} = useTour();
+```
+
+The functions never change identity, so they are safe in effect dependencies. Starting the tour that is already running (same `tourId`, or the same steps array without an id) does nothing, which makes "start on mount" effects safe in Strict Mode. Starting a different tour ends the current one with `'closed'`.
 
 ```tsx
-import {forwardRef} from 'react';
-import {TourProvider, type TourTooltipProps} from '@robertlinde/react-tour-kit/react';
+// Show the onboarding once.
+useEffect(() => {
+  if (!user.hasSeenOnboarding) {
+    startTour(onboarding, 'onboarding');
+  }
+}, [user.hasSeenOnboarding, startTour]);
+```
 
-const CustomTooltip = forwardRef<HTMLDivElement, TourTooltipProps>(
-  ({title, content, currentStep, totalSteps, position, isPositioned, onClose, onNext, onPrev}, ref) => (
-    <div
-      ref={ref}
-      className="custom-tooltip"
-      style={{
-        position: 'fixed',
-        top: position.top,
-        left: position.left,
-        opacity: isPositioned ? 1 : 0,
-      }}
-    >
-      <h3>{title}</h3>
-      <p>{content}</p>
-      <div className="tooltip-footer">
+## When a tour ends
+
+Pass `onTourEnd` to the provider (for every tour, for example analytics) and/or to `startTour` (for one tour). Both run exactly once per tour: the tour's own callback first, then the provider's.
+
+```tsx
+<TourProvider
+  onTourEnd={(tourId, info) => {
+    analytics.track('tour_ended', {tourId, reason: info.reason, step: info.stepIndex + 1, of: info.totalSteps});
+  }}
+>
+```
+
+```tsx
+startTour(onboarding, 'onboarding', {
+  onTourEnd(tourId, info) {
+    if (info.reason === 'completed') {
+      markOnboardingDone();
+    }
+  },
+});
+```
+
+| `info.reason`      | When                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `'completed'`      | Finish on the last step                                                             |
+| `'closed'`         | The close button, `endTour()`, the Android back button, or another tour was started |
+| `'blur'`           | A click or tap on the dimmed area (only with `closeOnOverlayClick`, the default)    |
+| `'escape'`         | <kbd>Esc</kbd> on the web, the VoiceOver escape gesture on iOS                      |
+| `'target-missing'` | No remaining step could be shown                                                    |
+| `'error'`          | A step's `onBeforeStep` threw or rejected; the error is in `info.error`             |
+
+`info` also has `stepIndex`, `step` and `totalSteps`. If a callback throws, the error is reported (`reportError` in browsers, `console.error` on React Native) and the tour still closes.
+
+Set `closeOnOverlayClick={false}` on the provider to close only with the close button, <kbd>Esc</kbd> and the back button.
+
+## Theme
+
+```tsx
+<TourProvider
+  theme={{
+    primaryColor: '#8b5cf6',
+    tooltipBackground: '#1f2937',
+    titleColor: '#f9fafb',
+    contentColor: '#d1d5db',
+    overlayColor: 'rgba(0, 0, 0, 0.7)',
+  }}
+>
+```
+
+| Key                 | Used for                                                    | Default                |
+| ------------------- | ----------------------------------------------------------- | ---------------------- |
+| `primaryColor`      | Buttons, step badge, active dot, highlight ring             | `'#2563eb'`            |
+| `primaryTextColor`  | Text on `primaryColor`                                      | `'#ffffff'`            |
+| `tooltipBackground` | The tooltip                                                 | `'#ffffff'`            |
+| `titleColor`        | The title                                                   | `'#111827'`            |
+| `contentColor`      | The content; muted parts (dots, Back button) derive from it | `'#4b5563'`            |
+| `overlayColor`      | The dimmed area (include transparency)                      | `'rgba(0, 0, 0, 0.5)'` |
+
+The defaults meet WCAG AA contrast. A dark theme only needs a dark background and light text colours.
+
+## Texts and languages
+
+```tsx
+<TourProvider
+  i18n={{
+    nextLabel: 'Weiter',
+    prevLabel: 'Zurück',
+    finishLabel: 'Fertig',
+    stepCounterTemplate: '{current} von {total}',
+    closeAriaLabel: 'Tour schließen',
+    dotAriaLabelTemplate: 'Zu Schritt {step}',
+  }}
+>
+```
+
+| Key                    | Default                  |
+| ---------------------- | ------------------------ |
+| `nextLabel`            | `'Next'`                 |
+| `prevLabel`            | `'Back'`                 |
+| `finishLabel`          | `'Finish'`               |
+| `stepCounterTemplate`  | `'{current} of {total}'` |
+| `closeAriaLabel`       | `'Close tour'`           |
+| `dotAriaLabelTemplate` | `'Go to step {step}'`    |
+
+## Custom tooltip
+
+`TooltipComponent` replaces what is _inside_ the tooltip. The tour still measures it, places it, keeps it on screen, animates it, and moves focus to it — your component only renders content and calls the callbacks:
+
+```tsx
+import {type TourTooltipProps} from '@robertlinde/react-tour-kit/react';
+
+function MyTooltip({step, currentStep, totalSteps, onNext, onPrev, onClose, titleId, descriptionId}: TourTooltipProps) {
+  const isLast = currentStep === totalSteps - 1;
+  return (
+    <div className="my-tooltip">
+      <h3 id={titleId}>{step.title}</h3>
+      <div id={descriptionId}>{step.content}</div>
+      <footer>
+        <button onClick={onClose}>Skip</button>
         <span>
-          {currentStep + 1} of {totalSteps}
+          {currentStep + 1}/{totalSteps}
         </span>
-        <button onClick={onPrev} disabled={currentStep === 0}>
+        <button disabled={currentStep === 0} onClick={onPrev}>
           Back
         </button>
-        <button onClick={onNext}>{currentStep === totalSteps - 1 ? 'Finish' : 'Next'}</button>
-        <button onClick={onClose}>×</button>
-      </div>
-    </div>
-  ),
-);
-
-function App() {
-  return (
-    <TourProvider TooltipComponent={CustomTooltip}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
-**React Native:**
-
-```tsx
-import {forwardRef} from 'react';
-import {View, Text, TouchableOpacity} from 'react-native';
-import {TourProvider, type TourTooltipProps} from '@robertlinde/react-tour-kit/react-native';
-
-const CustomTooltip = forwardRef<View, TourTooltipProps>(
-  ({title, content, position, isPositioned, onNext, onClose}, ref) => (
-    <View
-      ref={ref}
-      style={{
-        position: 'absolute',
-        top: position.top,
-        left: position.left,
-        opacity: isPositioned ? 1 : 0,
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 8,
-      }}
-    >
-      <Text style={{fontWeight: 'bold'}}>{title}</Text>
-      <Text>{content}</Text>
-      <TouchableOpacity onPress={onNext}>
-        <Text>Next</Text>
-      </TouchableOpacity>
-    </View>
-  ),
-);
-
-function App() {
-  return (
-    <TourProvider TooltipComponent={CustomTooltip}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
-
-### Custom Overlay Component
-
-Customize the backdrop overlay.
-
-**Web:**
-
-```tsx
-import {TourProvider, type TourOverlayProps} from '@robertlinde/react-tour-kit/react';
-
-function CustomOverlay({highlightRect, onClose}: TourOverlayProps) {
-  return (
-    <div className="custom-overlay" onClick={onClose}>
-      <div
-        className="highlight-border"
-        style={{
-          position: 'absolute',
-          top: highlightRect.top - 4,
-          left: highlightRect.left - 4,
-          width: highlightRect.width + 8,
-          height: highlightRect.height + 8,
-          border: '2px solid #your-brand-color',
-          borderRadius: '8px',
-        }}
-      />
+        <button onClick={onNext}>{isLast ? 'Done' : 'Next'}</button>
+      </footer>
     </div>
   );
 }
 
-function App() {
-  return (
-    <TourProvider OverlayComponent={CustomOverlay}>
-      <YourApp />
-    </TourProvider>
-  );
+<TourProvider TooltipComponent={MyTooltip}>…</TourProvider>;
+```
+
+On React Native, render views instead; everything else is the same.
+
+| Prop                             | Description                                                                                                          |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `step`                           | The step being shown                                                                                                 |
+| `currentStep`, `totalSteps`      | Zero-based index and count                                                                                           |
+| `onNext`, `onPrev`, `onClose`    | Navigation; `onNext` completes the tour on the last step                                                             |
+| `onGoToStep(index)`              | Jump to a step (for clickable dots)                                                                                  |
+| `placement`                      | The side the tooltip ended up on, or `'center'`                                                                      |
+| `arrowOffset`                    | Where an arrow should point, in pixels from the tooltip's left (top/bottom) or top (left/right) edge; or `undefined` |
+| `titleId`, `descriptionId` (web) | Put them on the title and content elements so screen readers announce them                                           |
+
+The card around your content has the theme's background, rounded corners and a shadow; style the inside as you like. `getTruncatedDots(current, total)` is exported for building a compact dot pager like the built-in one.
+
+## Styling with CSS (web)
+
+The built-in tooltip and overlay use stable class names and CSS variables, so you can restyle them without a custom component. All built-in rules live in a CSS cascade layer, so your own CSS wins over them — whatever its specificity, without `!important`. (If your CSS is itself inside a layer, such as Tailwind's, write these overrides outside of it.)
+
+The exceptions are the few properties that keep the tour in place, clickable and readable, which global styles would otherwise change (Tailwind's preflight, normalize.css, Bootstrap, or rules for every `dialog` or `button`): the position, size and spacing of the dialog, the highlight and the tooltip box, and the box, spacing, colours and font size of the buttons. They are `!important` in the built-in styles; their colours still come from the variables below. To change one of them anyway, use `!important` in your rule.
+
+```css
+.rtk-root {
+  --rtk-radius: 4px; /* tooltip corners */
+  --rtk-spotlight-radius: 2px; /* highlight corners */
+  --rtk-z-index: 10000; /* only used where the browser has no top layer */
+}
+
+.rtk-title {
+  font-family: 'Inter', sans-serif;
 }
 ```
 
-**React Native:**
+- **Variables**: `--rtk-radius`, `--rtk-spotlight-radius`, `--rtk-ease`, `--rtk-z-index`. The colours `--rtk-primary`, `--rtk-on-primary`, `--rtk-bg`, `--rtk-title`, `--rtk-text` and `--rtk-overlay` come from the `theme` prop (set on `.rtk-root` directly): change them with `theme`, or override them on an element inside the tour, such as `.rtk-card`.
+- **Classes**: `.rtk-root` (the dialog), `.rtk-backdrop`, `.rtk-spotlight` (the highlight), `.rtk-tooltip` (positioned box), `.rtk-card` (the tooltip itself), `.rtk-header`, `.rtk-counter`, `.rtk-close`, `.rtk-body`, `.rtk-title`, `.rtk-content`, `.rtk-footer`, `.rtk-button`, `.rtk-button--prev`, `.rtk-button--next`, `.rtk-dots`, `.rtk-dot`, `.rtk-arrow`.
+- **State**: `.rtk-tooltip[data-placement="top|bottom|left|right|center"]`, `.rtk-root[data-state="closing"]`.
 
-```tsx
-import {View, TouchableWithoutFeedback, StyleSheet} from 'react-native';
-import {TourProvider, type TourOverlayProps} from '@robertlinde/react-tour-kit/react-native';
+The tour is rendered as a modal `<dialog>` in the browser's top layer, so it is always above your app, whatever its `z-index` values and stacking contexts.
 
-function CustomOverlay({highlightRect, onClose}: TourOverlayProps) {
-  return (
-    <TouchableWithoutFeedback onPress={onClose}>
-      <View style={StyleSheet.absoluteFill}>
-        {/* Your custom overlay with cutout */}
-        <View
-          style={{
-            position: 'absolute',
-            top: highlightRect.top - 4,
-            left: highlightRect.left - 4,
-            width: highlightRect.width + 8,
-            height: highlightRect.height + 8,
-            borderWidth: 2,
-            borderColor: '#your-brand-color',
-            borderRadius: 8,
-          }}
-        />
-      </View>
-    </TouchableWithoutFeedback>
-  );
-}
+## What the tour does for you
 
-function App() {
-  return (
-    <TourProvider OverlayComponent={CustomOverlay}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
+- **Keeps everything in sight.** Before a step is shown, its target is scrolled into view — through every scroll container around it, including horizontal ones — with room for the tooltip. Elements that stay put while the page scrolls (sticky headers, cookie banners, floating buttons; any number, any shape) are detected and the target is scrolled clear of them, in both directions. Targets larger than the screen are aligned to their start. The tooltip is placed inside the visible screen minus safe areas and the on-screen keyboard, flips to another side when there is no room, and scrolls its own content if it is taller than the screen. When the window is resized or rotated, or your app moves the target, the tour follows.
+- **Waits instead of guessing.** Targets that are not rendered yet (lazy pages, animations, data loading) are awaited, event-driven, for up to 5 seconds.
+- **Animates.** The tour fades in, the highlight glides from target to target together with the scroll, and the tooltip enters from the side it is on. On React Native every animation runs on the UI thread, so it stays smooth while JavaScript is busy. With reduced motion turned on in the system, movement is replaced by short fades.
+- **Is accessible.** On the web the tour is a modal dialog (`aria-modal`, labelled by the step title, described by its content): focus moves into the tooltip and back to where it was when the tour ends, the rest of the page is inert, arrow keys and <kbd>Esc</kbd> work (but leave text fields, sliders, radio groups and other controls in a custom tooltip alone), a long tooltip scrolls with the keyboard, and step changes are announced. Buttons have accessible names and large enough touch targets. In Windows high-contrast mode the highlight is drawn as an outline. On React Native, screen-reader focus moves to the tooltip, the app behind it is hidden from screen readers (in a `TourHost`, see [Modal screens](#modal-screens)), and the back button closes the tour.
+- **Costs nothing while idle.** While a step is on screen and nothing moves, the tour does no work at all: no timers, no measuring, no re-rendering. Scrolling and resizing are followed once per frame, without re-rendering your app. `useTour()` only re-renders components when the tour's state changes.
+- **Is safe.** Callbacks run exactly once, also in Strict Mode, with double clicks and when tours replace each other. Errors in your callbacks are reported and never leave the tour stuck.
 
-### Persisting Tour Completion
+## Testing your app
 
-Track which tours users have fully completed. Only persist on `'completed'` so dismissed or interrupted tours aren't marked done.
+- **jsdom (Jest, Vitest)**: tours run in jsdom, with or without a `ResizeObserver` polyfill. jsdom has no layout, so every target counts as visible at the top of the screen; test that your steps and callbacks work, and leave the visual part to end-to-end tests.
+- **Jest**: the package is ESM-only, and Jest runs CommonJS by default, so Jest has to transform it. Exempt it from `transformIgnorePatterns`: on the web, for example `'/node_modules/(?!@robertlinde/react-tour-kit/)'` (with a Babel or SWC transform that turns ES modules into CommonJS, which `babel-jest` with `@babel/preset-env` does); with React Native's preset, `'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@robertlinde/react-tour-kit)/)'`; with Next.js's `next/jest`, add the package to `transpilePackages` in `next.config`. Vitest needs nothing.
+- **End-to-end (web)**: the tooltip is a `dialog` named after the step title, so `page.getByRole('dialog', {name: 'Settings'})` finds it. The buttons are named by your `i18n` labels.
+- **End-to-end (React Native)**: the built-in tooltip has the testIDs `rtk-tooltip`, `rtk-next`, `rtk-prev` and `rtk-close`. Prefer them over texts: on Android, "Back" and "Home" also match the system navigation bar. While a tour is open, the app behind it is hidden from accessibility (except while a `TourHost` draws it), so UI-test tools mostly see only the tour.
 
-```tsx
-import {TourProvider, type TourEndCallback} from '@robertlinde/react-tour-kit/react';
+## Requirements
 
-function App() {
-  const handleTourEnd: TourEndCallback = async (tourId, info) => {
-    if (tourId && info.reason === 'completed') {
-      // Save to your backend
-      await fetch('/api/users/me/completed-tours/' + tourId, {
-        method: 'POST',
-      });
-    }
-  };
+- React 18 or 19.
+- Web: current versions of Chrome, Edge, Firefox and Safari.
+- React Native 0.79 or newer (Expo SDK 53 or newer).
+- ESM-only: works with every bundler (Vite, webpack, Next.js, Metro, …) and with Node's `import`.
+- TypeScript: `moduleResolution` `bundler`, `node16` or `nodenext` (the defaults of current React Native, Expo, Next.js and Vite projects).
 
-  return (
-    <TourProvider onTourEnd={handleTourEnd}>
-      <YourApp />
-    </TourProvider>
-  );
-}
-```
+## Migrating from 0.x
 
-See [Tour End Callbacks](#tour-end-callbacks) for the full list of end reasons and how to register per-tour end handlers.
-
-### Conditional Tour Start
-
-Start tours based on user state:
-
-```tsx
-function TourTrigger({tourId, steps, autoStart = true}) {
-  const {startTour} = useTour();
-  const {user} = useUser(); // Your auth hook
-
-  useEffect(() => {
-    if (autoStart && user && !user.completedTours?.[tourId]) {
-      // Auto-start if user hasn't completed this tour
-      setTimeout(() => startTour(steps, tourId), 500);
-    }
-  }, [user, tourId, autoStart]);
-
-  return <button onClick={() => startTour(steps, tourId)}>Start Tour</button>;
-}
-```
-
-## Styling
-
-The default components use inline styles for zero-dependency styling. You have three options for customization:
-
-1. **Theming**: Use the `theme` prop to customize colors (see [Theming](#theming) section)
-2. **Custom Components**: Provide your own `TooltipComponent` and `OverlayComponent` for full control
-3. **CSS Overrides** (Web only): Override styles via CSS selectors
-
-## Platform Support
-
-**Web:**
-
-- Chrome, Firefox, Safari, Edge (latest versions)
-
-**React Native:**
-
-- iOS 13+
-- Android 5.0+ (API 21+)
-- React Native 0.70+
-
-Requires React 18+.
-
-## TypeScript
-
-Full TypeScript support is included. Import types as needed:
-
-```tsx
-import type {
-  TourStep,
-  TourContextType,
-  TourProviderProps,
-  TourTooltipProps,
-  TourOverlayProps,
-  TourTheme,
-  TourI18n,
-  TourEndCallback,
-  TourEndInfo,
-  TourEndReason,
-  StartTourOptions,
-} from '@robertlinde/react-tour-kit/react';
-```
-
-## Utilities
-
-The package exports utility functions for custom implementations:
-
-```tsx
-import {
-  calculateTooltipPosition, // Calculate optimal tooltip position
-  findVisibleElement, // Find first visible element matching selector
-} from '@robertlinde/react-tour-kit/react';
-```
+1.0 is a rewrite with a smaller, safer API. Most apps only need to change a custom tooltip, if they have one. See [MIGRATION.md](./MIGRATION.md) for every change with before-and-after examples, and [CHANGELOG.md](./CHANGELOG.md) for what is new.
 
 ## Development
 
 ```bash
-# Install dependencies
 npm install
-
-# Build
-npm run build
-
-# Watch mode
-npm run start:dev
-
-# Lint
+npm test            # unit and component tests (Vitest, real browser)
+npm run test:e2e    # end-to-end tests on desktop and mobile browsers (Playwright)
 npm run lint
-
-# Format
-npm run format
-
-# Run web demo
-cd demos/react && npm install && npm run dev
-
-# Run native demo
-cd demos/react-native && npm install && npm run ios
+npm run typecheck
+npm run build
 ```
+
+How the code is organised, and how to add a feature so that both platforms get it, is described in [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+The demos use the library's source directly, so every change is live there:
+
+```bash
+npm run demo:web       # web demo: http://localhost:5173 — includes a /lab page with edge cases
+npm run demo:ios       # React Native demo in Expo Go (run `npm install` in demos/react-native first)
+npm run demo:android
+```
+
+All tests are in `test/` (see [ARCHITECTURE.md](./ARCHITECTURE.md#tests)). The React Native demo is tested with [Maestro](https://maestro.dev) flows: with the app open, run `maestro test test/maestro -e APP_ID=host.exp.Exponent`. To see the Android navigation bar setting in effect, build the app natively with `npx expo run:android`.
 
 ## License
 

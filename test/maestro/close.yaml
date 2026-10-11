@@ -1,0 +1,43 @@
+# Tapping the dimmed area closes the tour; a custom tooltip only replaces the content.
+appId: ${APP_ID}
+name: Closes on outside tap, custom tooltip
+---
+# Start clean, even if an earlier run left a tour open.
+- tapOn:
+    id: 'rtk-close'
+    optional: true
+# Home also scrolls the home screen back to the top.
+- tapOn:
+    id: 'tab-home'
+- tapOn: 'Start the tour'
+- extendedWaitUntil:
+    visible: 'Welcome to react-tour-kit'
+    timeout: 10000
+- tapOn:
+    point: '50%,85%'
+- extendedWaitUntil:
+    notVisible: 'Welcome to react-tour-kit'
+- assertVisible: 'Start the tour'
+# Custom tooltip
+- tapOn:
+    id: 'tab-settings'
+- tapOn:
+    id: 'compact-switch'
+# Home also scrolls the home screen back to the top.
+- tapOn:
+    id: 'tab-home'
+- tapOn: 'Start the tour'
+- extendedWaitUntil:
+    visible: 'Welcome to react-tour-kit'
+    timeout: 10000
+- assertVisible: 'Skip'
+- assertVisible: '1/9'
+- tapOn: 'Skip'
+- extendedWaitUntil:
+    notVisible: 'Welcome to react-tour-kit'
+- tapOn:
+    id: 'tab-settings'
+- tapOn:
+    id: 'compact-switch'
+- tapOn:
+    id: 'tab-home'

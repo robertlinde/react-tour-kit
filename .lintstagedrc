@@ -1,4 +1,4 @@
 {
-  "src/**/*.{ts,tsx}": ["xo --fix", "prettier --write"],
+  "{src,test}/**/*.{ts,tsx}": ["xo --fix", "prettier --write"],
   "*.{json,md}": ["prettier --write"]
 }

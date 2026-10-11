@@ -1,38 +1,15 @@
-/**
- * Internationalization options for tour text strings.
- * All properties are optional and have sensible defaults.
- */
+/** Texts of the built-in tooltip. Every key is optional. */
 export type TourI18n = {
-  /**
-   * Label for the "Next" button.
-   * @default 'Next'
-   */
+  /** @defaultValue `'Next'` */
   readonly nextLabel?: string;
-  /**
-   * Label for the "Back" button.
-   * @default 'Back'
-   */
+  /** @defaultValue `'Back'` */
   readonly prevLabel?: string;
-  /**
-   * Label for the "Finish" button (shown on last step).
-   * @default 'Finish' (React) or 'Done' (React Native)
-   */
+  /** Label of the Next button on the last step. @defaultValue `'Finish'` */
   readonly finishLabel?: string;
-  /**
-   * Template string for the step counter. Use `{current}` and `{total}` as placeholders.
-   * @example 'Step {current} of {total}'
-   * @default '{current} / {total}' (React) or 'Step {current} of {total}' (React Native)
-   */
+  /** Step counter; `{current}` and `{total}` are replaced. @defaultValue `'{current} of {total}'` */
   readonly stepCounterTemplate?: string;
-  /**
-   * Accessibility label for the close button.
-   * @default 'Close tour'
-   */
+  /** Accessible name of the close button. @defaultValue `'Close tour'` */
   readonly closeAriaLabel?: string;
-  /**
-   * Template for step dot accessibility labels. Use `{step}` as placeholder.
-   * @example 'Go to step {step}'
-   * @default 'Go to step {step}'
-   */
+  /** Accessible name of each step dot; `{step}` and `{total}` are replaced. @defaultValue `'Go to step {step}'` */
   readonly dotAriaLabelTemplate?: string;
 };

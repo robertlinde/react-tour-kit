@@ -1,0 +1,58 @@
+# The whole demo tour, forwards: every step must appear (none skipped), across screens, lists and a modal.
+# While the tour is open, the app behind it is hidden from accessibility (the tour is modal), so the
+# flows check the tour itself: a step that was skipped never shows its title.
+# Run with the app open, from the repository root: `maestro test test/maestro -e APP_ID=host.exp.Exponent` (Expo Go) or your build's id.
+# Buttons are tapped by their testID: on Android, "Home" and "Back" would also match the system navigation bar.
+appId: ${APP_ID}
+name: Runs the whole tour
+---
+# Start clean, even if an earlier run left a tour open.
+- tapOn:
+    id: 'rtk-close'
+    optional: true
+# Home also scrolls the home screen back to the top.
+- tapOn:
+    id: 'tab-home'
+- tapOn: 'Start the tour'
+- extendedWaitUntil:
+    visible: 'Welcome to react-tour-kit'
+    timeout: 10000
+- assertVisible: '1 of 9'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Highlight anything'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Smart placement'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Horizontal lists'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Below the fold'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Across screens'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Long lists'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Modal screens'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: "That's it!"
+- assertVisible: '9 of 9'
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Start the tour'
+- assertNotVisible: "That's it!"

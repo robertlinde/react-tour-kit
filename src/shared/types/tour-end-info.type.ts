@@ -1,42 +1,32 @@
-import {type TourStep} from './tour-step.type';
+import type {TourStep} from './tour-step.type.js';
 
 /**
- * Reason a tour ended.
- * - `completed` — user clicked Finish on the last step.
- * - `closed` — user clicked the close (✕) button in the tooltip, or `endTour()` was called programmatically.
- * - `blur` — user clicked/tapped the overlay outside the highlighted element.
- * - `escape` — user pressed the Escape key (web only).
- * - `target-missing` — the step's target element could not be measured and the tour had to end.
+ * Why a tour ended.
+ * - `completed`: the user finished the last step.
+ * - `closed`: the close button, `endTour()`, the Android back button, or another tour was started.
+ * - `blur`: the user clicked or tapped the dimmed area (see `closeOnOverlayClick`).
+ * - `escape`: Escape on the web, the VoiceOver escape gesture on iOS.
+ * - `target-missing`: no remaining step had a target that could be found and shown.
+ * - `error`: a step's `onBeforeStep` threw or rejected; see {@link TourEndInfo.error}.
  */
-export type TourEndReason = 'completed' | 'closed' | 'blur' | 'escape' | 'target-missing';
+export type TourEndReason = 'completed' | 'closed' | 'blur' | 'escape' | 'target-missing' | 'error';
 
-/**
- * Details about how and where a tour ended.
- * Passed as the second argument to end callbacks.
- */
+/** Details about how and where a tour ended. */
 export type TourEndInfo = {
   readonly reason: TourEndReason;
-  /** Zero-based index of the step the user was on when the tour ended. */
+  /** Zero-based index of the step the user was on (for `target-missing`: the last step that was tried). */
   readonly stepIndex: number;
-  /** The step object the user was on when the tour ended. */
   readonly step: TourStep;
-  /** Total number of steps in the tour. */
   readonly totalSteps: number;
+  /** The error thrown by `onBeforeStep` when `reason` is `'error'`. */
+  readonly error?: unknown;
 };
 
-/**
- * Callback fired when a tour ends.
- * The second argument provides context about why and where the tour ended.
- */
+/** Called once when a tour ends. */
 export type TourEndCallback = (tourId: string | undefined, info: TourEndInfo) => void;
 
-/**
- * Per-tour options passed to `startTour`.
- */
+/** Options for a single tour, passed to `startTour`. */
 export type StartTourOptions = {
-  /**
-   * Callback fired when this specific tour ends.
-   * Fires before the provider-level `onTourEnd`.
-   */
+  /** Called when this tour ends, before the provider's `onTourEnd`. */
   readonly onTourEnd?: TourEndCallback;
 };

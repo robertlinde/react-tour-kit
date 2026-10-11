@@ -1,7 +1,14 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "jsx": "react-native",
-    "strict": true
+    "strict": true,
+    "paths": {
+      /* The library's source, used directly instead of the npm package (see metro.config.js) */
+      "@robertlinde/react-tour-kit/react-native": ["../../src/react-native.ts"],
+      /* One copy of React's and React Native's types, also for the library's source */
+      "react": ["./node_modules/@types/react/index.d.ts"],
+      "react/*": ["./node_modules/@types/react/*"],
+      "react-native": ["./node_modules/react-native/types_generated/index.d.ts"]
+    }
   }
 }

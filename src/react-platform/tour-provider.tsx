@@ -1,339 +1,44 @@
-'use client';
-
-import {type JSX, useCallback, useState, useEffect, useRef, useMemo} from 'react';
+import {type ReactNode, useEffect, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {
-  type TourStep,
-  type TourContextType,
-  type Rect,
-  type StartTourOptions,
-  type TourEndCallback,
-  type TourEndInfo,
-  type TourEndReason,
-  TourContext,
-  calculateTooltipPosition,
-  resolveTheme,
-} from '../shared';
-import {TourTooltip as DefaultTourTooltip} from './components/tour-tooltip';
-import {TourOverlay as DefaultTourOverlay} from './components/tour-overlay';
-import {webPlatformAdapter} from './platform-adapter';
-import {type TourProviderProps} from '.';
+import {TourRoot} from '../shared/react/tour-root.js';
+import {type TourProviderBaseProps, useTourCore} from '../shared/react/tour-provider-core.js';
+import {useIsomorphicLayoutEffect} from '../shared/react/use-isomorphic-layout-effect.hook.js';
+import {TourOverlay, type TourOverlayProps} from '../shared/renderer/tour-overlay.js';
+import {acquireSafeAreaProbe} from './dom/viewport.util.js';
+import {createWebPlatform, type WebPlatform} from './dom/web-platform.js';
+import {webRenderer} from './layer/web-renderer.js';
 
-const defaultPlacement = 'bottom' as const;
-const positionRetryDelayMs = 100;
-const initialPositionDelayMs = 50;
-const maxPositionAttempts = 20;
-const domUpdateDelayMs = 100;
+export type TourProviderProps = TourProviderBaseProps;
 
-export function TourProvider({
-  children,
-  TooltipComponent,
-  OverlayComponent,
-  onTourEnd,
-  theme,
-  platform = webPlatformAdapter,
-  i18n,
-  closeOnOverlayClick = true,
-}: TourProviderProps): JSX.Element {
-  const resolvedTheme = useMemo(() => resolveTheme(theme), [theme]);
-  const [isActive, setIsActive] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [steps, setSteps] = useState<TourStep[]>([]);
-  const [currentTourId, setCurrentTourId] = useState<string | undefined>(undefined);
-  const [tooltipPosition, setTooltipPosition] = useState({top: 0, left: 0});
-  const [isPositioned, setIsPositioned] = useState(false);
-  const [highlightRect, setHighlightRect] = useState<Rect | undefined>(undefined);
-  const tooltipRef = useRef<HTMLDivElement>(null);
-  const [positionKey, setPositionKey] = useState(0);
-  const [isMounted, setIsMounted] = useState(false);
-  const tourOnEndRef = useRef<TourEndCallback | undefined>(undefined);
-
-  const Tooltip = TooltipComponent ?? DefaultTourTooltip;
-  const Overlay = OverlayComponent ?? DefaultTourOverlay;
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  const startTour = useCallback((tourSteps: TourStep[], tourId?: string, options?: StartTourOptions): void => {
-    if (tourSteps.length > 0) {
-      setSteps(tourSteps);
-      setCurrentStep(0);
-      setCurrentTourId(tourId);
-      tourOnEndRef.current = options?.onTourEnd;
-      setIsActive(true);
-    }
-  }, []);
-
-  const finishTour = useCallback(
-    (reason: TourEndReason): void => {
-      // Snapshot step info BEFORE resetting state so callbacks see accurate values.
-      const stepAtEnd = steps[currentStep] ?? steps.at(-1);
-
-      if (stepAtEnd) {
-        const info: TourEndInfo = {
-          reason,
-          stepIndex: currentStep,
-          step: stepAtEnd,
-          totalSteps: steps.length,
-        };
-
-        // Tour-level fires first, provider-level second.
-        tourOnEndRef.current?.(currentTourId, info);
-        onTourEnd?.(currentTourId, info);
-      }
-
-      tourOnEndRef.current = undefined;
-      setIsActive(false);
-      setCurrentStep(0);
-      setSteps([]);
-      setCurrentTourId(undefined);
-      setHighlightRect(undefined);
-      setTooltipPosition({top: 0, left: 0});
-      setIsPositioned(false);
-    },
-    [currentTourId, currentStep, steps, onTourEnd],
-  );
-
-  // Context-exposed endTour stays compatible with existing consumers.
-  // Defaults to 'closed' since a direct `useTour().endTour()` call is
-  // semantically equivalent to the user dismissing the tour.
-  const endTour = useCallback((): void => {
-    finishTour('closed');
-  }, [finishTour]);
-
-  const nextStep = useCallback((): void => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((previous) => previous + 1);
-    } else {
-      finishTour('completed');
-    }
-  }, [currentStep, steps.length, finishTour]);
-
-  const previousStep = useCallback((): void => {
-    if (currentStep > 0) {
-      setCurrentStep((previous) => previous - 1);
-    }
-  }, [currentStep]);
-
-  const goToStep = useCallback(
-    (step: number): void => {
-      if (step >= 0 && step < steps.length) {
-        setCurrentStep(step);
-      }
-    },
-    [steps.length],
-  );
-
-  const updatePositions = useCallback((): void => {
-    if (!isActive || steps.length === 0) {
-      return;
-    }
-
-    const currentTourStep = steps[currentStep];
-    if (!currentTourStep) {
-      return;
-    }
-
-    void (async (): Promise<void> => {
-      const rect = await platform.measureElement(currentTourStep.target);
-      if (!rect) {
-        if (currentStep < steps.length - 1) {
-          setCurrentStep((previous) => previous + 1);
-        } else {
-          finishTour('target-missing');
-        }
-
-        return;
-      }
-
-      setHighlightRect(rect);
-
-      const placement = currentTourStep.placement ?? defaultPlacement;
-      const tooltipDimensions = platform.measureTooltip(tooltipRef);
-      const viewportDimensions = platform.getViewportDimensions();
-      const position = calculateTooltipPosition(rect, placement, tooltipDimensions, viewportDimensions);
-      setTooltipPosition(position);
-      setIsPositioned(true);
-    })();
-  }, [isActive, currentStep, steps, finishTour, platform]);
-
-  // Handle step transitions and onBeforeStep callbacks
-  useEffect(() => {
-    if (!isActive || steps.length === 0) {
-      return;
-    }
-
-    const currentTourStep = steps[currentStep];
-    if (!currentTourStep) {
-      return;
-    }
-
-    const runStep = async (): Promise<void> => {
-      if (currentTourStep.onBeforeStep) {
-        await currentTourStep.onBeforeStep(currentTourStep.target);
-        await new Promise<void>((resolve) => {
-          setTimeout(resolve, domUpdateDelayMs);
-        });
-      }
-
-      const rect = await platform.measureElement(currentTourStep.target);
-      if (!rect) {
-        if (currentStep < steps.length - 1) {
-          setCurrentStep((previous) => previous + 1);
-        } else {
-          finishTour('target-missing');
-        }
-
-        return;
-      }
-
-      setHighlightRect(rect);
-      setIsPositioned(false);
-
-      // Trigger positioning - scrolling happens after tooltip is measured
-      setTimeout(() => {
-        setPositionKey((k) => k + 1);
-      }, initialPositionDelayMs);
-    };
-
-    void runStep();
-  }, [isActive, currentStep, steps, finishTour, platform]);
-
-  // Calculate tooltip position with retry logic
-  useEffect(() => {
-    if (!isActive || !highlightRect || steps.length === 0) {
-      return;
-    }
-
-    const currentTourStep = steps[currentStep];
-    if (!currentTourStep) {
-      return;
-    }
-
-    let attempts = 0;
-    let timeoutId: ReturnType<typeof setTimeout>;
-    let animationFrameId: number;
-
-    const tryPosition = (): void => {
-      attempts++;
-
-      animationFrameId = platform.scheduleFrame(() => {
-        void (async (): Promise<void> => {
-          const rect = await platform.measureElement(currentTourStep.target);
-
-          if (!rect || rect.width === 0 || rect.height === 0) {
-            if (attempts < maxPositionAttempts) {
-              timeoutId = setTimeout(tryPosition, positionRetryDelayMs);
-            }
-
-            return;
-          }
-
-          setHighlightRect(rect);
-
-          const placement = currentTourStep.placement ?? defaultPlacement;
-          const tooltipDimensions = platform.measureTooltip(tooltipRef);
-          const viewportDimensions = platform.getViewportDimensions();
-          const position = calculateTooltipPosition(rect, placement, tooltipDimensions, viewportDimensions);
-
-          setTooltipPosition(position);
-          setIsPositioned(true);
-
-          // Scroll after positioning so we have actual tooltip dimensions
-          await platform.scrollToElement(currentTourStep.target, placement, tooltipDimensions.height);
-        })();
-      });
-    };
-
-    timeoutId = setTimeout(tryPosition, initialPositionDelayMs);
-
-    return (): void => {
-      clearTimeout(timeoutId);
-      if (animationFrameId) {
-        platform.cancelFrame(animationFrameId);
-      }
-    };
-  }, [isActive, currentStep, steps, highlightRect, positionKey, platform]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    if (!isActive) {
-      return;
-    }
-
-    return platform.subscribeToKeyboard({
-      onEscape() {
-        finishTour('escape');
-      },
-      onNext: nextStep,
-      onPrev: previousStep,
-    });
-  }, [isActive, finishTour, nextStep, previousStep, platform]);
-
-  // Handle window resize and scroll
-  useEffect(() => {
-    if (!isActive) {
-      return;
-    }
-
-    return platform.subscribeToLayout(updatePositions);
-  }, [isActive, updatePositions, platform]);
-
-  const currentTourStep = steps[currentStep];
-
-  const contextValue = useMemo<TourContextType>(
-    () => ({
-      isActive,
-      currentStep,
-      steps,
-      currentTourId,
-      startTour,
-      endTour,
-      nextStep,
-      prevStep: previousStep,
-      goToStep,
-    }),
-    [isActive, currentStep, steps, currentTourId, startTour, endTour, nextStep, previousStep, goToStep],
-  );
-
+/**
+ * Provides `useTour()` to its children and renders the tour. Place it around your app, inside
+ * your router if steps navigate between pages.
+ */
+export function TourProvider(props: TourProviderProps): ReactNode {
+  const [platform] = useState(createWebPlatform);
+  const {engine, overlay} = useTourCore(props, platform, webRenderer);
+  useEffect(() => acquireSafeAreaProbe(), []);
   return (
-    <TourContext value={contextValue}>
-      {children}
-
-      {isActive && highlightRect && isMounted
-        ? createPortal(
-            <>
-              <Overlay
-                closeOnOverlayClick={closeOnOverlayClick}
-                highlightRect={highlightRect}
-                theme={resolvedTheme}
-                onClose={() => {
-                  finishTour('blur');
-                }}
-              />
-
-              {currentTourStep ? (
-                <Tooltip
-                  ref={tooltipRef}
-                  content={currentTourStep.content}
-                  currentStep={currentStep}
-                  i18n={i18n}
-                  isPositioned={isPositioned}
-                  position={tooltipPosition}
-                  theme={resolvedTheme}
-                  title={currentTourStep.title}
-                  totalSteps={steps.length}
-                  onClose={endTour}
-                  onGoToStep={goToStep}
-                  onNext={nextStep}
-                  onPrev={previousStep}
-                />
-              ) : null}
-            </>,
-            document.body,
-          )
-        : null}
-    </TourContext>
+    <TourRoot engine={engine}>
+      {props.children}
+      <WebMount platform={platform} overlay={overlay} />
+    </TourRoot>
   );
+}
+
+/** Draws the tour into its own element at the end of `<body>`, on the client only (after hydration). */
+function WebMount({
+  platform,
+  overlay,
+}: {
+  readonly platform: WebPlatform;
+  readonly overlay: TourOverlayProps;
+}): ReactNode {
+  const [container, setContainer] = useState<HTMLElement | undefined>(undefined);
+  useIsomorphicLayoutEffect(() => {
+    const host = platform.mountHost();
+    setContainer(host.container);
+    return host.unmount;
+  }, [platform]);
+  return container ? createPortal(<TourOverlay {...overlay} />, container) : null;
 }

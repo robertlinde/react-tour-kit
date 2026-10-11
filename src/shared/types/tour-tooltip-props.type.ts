@@ -1,38 +1,27 @@
-import {type TourI18n} from './tour-i18n.type';
-import {type TourTheme} from './tour-theme.type';
+import type {TourPlacement, TourStep} from './tour-step.type.js';
 
 /**
- * Props for the tooltip component displayed during a tour.
+ * Props of a custom `TooltipComponent`. The component only renders the card's content: the tour
+ * measures, positions, animates and focuses it, and keeps it on screen.
  */
 export type TourTooltipProps = {
-  /** Title text for the current step. */
-  readonly title: string;
-  /** Content/description text for the current step. */
-  readonly content: string;
-  /** Zero-based index of the current step. */
+  readonly step: TourStep;
+  /** Zero-based index of the step. */
   readonly currentStep: number;
-  /** Total number of steps in the tour. */
   readonly totalSteps: number;
-  /** Calculated position for the tooltip. */
-  readonly position: {top: number; left: number};
-  /** Whether the tooltip position has been calculated and is ready to display. */
-  readonly isPositioned: boolean;
-  /** Callback to close/end the tour. */
-  readonly onClose: () => void;
-  /** Callback to advance to the next step. */
   readonly onNext: () => void;
-  /** Callback to go back to the previous step. */
   readonly onPrev: () => void;
-  /** Callback to jump to a specific step by index. */
-  readonly onGoToStep: (step: number) => void;
-  /** Theme configuration for styling. */
-  readonly theme: Required<TourTheme>;
-  /** Internationalization options for customizing text strings. */
-  readonly i18n?: TourI18n;
+  readonly onClose: () => void;
+  readonly onGoToStep: (index: number) => void;
+  /** Side of the target the tooltip ended up on, or `'center'` for steps without a target. Use it to draw an arrow. */
+  readonly placement: TourPlacement | 'center';
   /**
-   * Called by the tooltip component after it has been laid out, with its actual rendered size.
-   * The provider uses this on platforms where tooltip dimensions cannot be measured synchronously
-   * (e.g. React Native) to re-run position calculation with accurate dimensions.
+   * Distance in pixels from the tooltip's left edge (for `top`/`bottom`) or top edge (for
+   * `left`/`right`) to where an arrow should point. `undefined` when no arrow should be drawn.
    */
-  readonly onMeasured?: (size: {width: number; height: number}) => void;
+  readonly arrowOffset: number | undefined;
+  /** Put `id={titleId}` on the element showing the title so screen readers announce it. */
+  readonly titleId: string;
+  /** Put `id={descriptionId}` on the element showing the content. */
+  readonly descriptionId: string;
 };

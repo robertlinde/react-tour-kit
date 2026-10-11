@@ -22,7 +22,12 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* The library's source, used directly instead of the npm package */
+    "paths": {
+      "@robertlinde/react-tour-kit/react": ["../../src/react.ts"]
+    }
   },
   "include": ["src"]
 }

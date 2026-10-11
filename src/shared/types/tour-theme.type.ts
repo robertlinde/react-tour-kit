@@ -1,59 +1,28 @@
-/**
- * Theme configuration for customizing tour tooltip and overlay appearance.
- */
+/** Colours of the built-in tooltip and overlay. Every key is optional. */
 export type TourTheme = {
   /**
-   * Primary color used for buttons, step badge, and highlight border.
-   * @default '#3b82f6'
+   * Buttons, the step badge, the active dot and the highlight ring.
+   * @defaultValue `'#2563eb'`
    */
   readonly primaryColor?: string;
-
   /**
-   * Tooltip background color.
-   * @default '#ffffff'
+   * Text on `primaryColor` (the Next button and the step badge).
+   * @defaultValue `'#ffffff'`
    */
+  readonly primaryTextColor?: string;
+  /** @defaultValue `'#ffffff'` */
   readonly tooltipBackground?: string;
-
-  /**
-   * Title text color.
-   * @default '#1f2937'
-   */
+  /** @defaultValue `'#111827'` */
   readonly titleColor?: string;
-
   /**
-   * Content/body text color.
-   * @default '#4b5563'
+   * Body text. Muted elements (inactive dots, dividers, the Back button) are derived from it, so a
+   * dark theme only needs a dark `tooltipBackground` and light text colours.
+   * @defaultValue `'#4b5563'`
    */
   readonly contentColor?: string;
-
   /**
-   * Overlay background color (should include alpha for transparency).
-   * @default 'rgba(0, 0, 0, 0.5)'
+   * The dimmed area around the highlighted element. Include transparency.
+   * @defaultValue `'rgba(0, 0, 0, 0.5)'`
    */
   readonly overlayColor?: string;
 };
-
-/**
- * Default theme values.
- */
-export const defaultTheme: Required<TourTheme> = {
-  primaryColor: '#3b82f6',
-  tooltipBackground: '#ffffff',
-  titleColor: '#1f2937',
-  contentColor: '#4b5563',
-  overlayColor: 'rgba(0, 0, 0, 0.5)',
-};
-
-/**
- * Merge user theme with defaults.
- */
-export function resolveTheme(theme?: TourTheme): Required<TourTheme> {
-  if (!theme) {
-    return defaultTheme;
-  }
-
-  return {
-    ...defaultTheme,
-    ...theme,
-  };
-}

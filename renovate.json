@@ -1,26 +1,43 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
   "rangeStrategy": "pin",
   "labels": ["renovate"],
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {"enabled": true},
   "packageRules": [
+    {
+      "description": "Every Renovate commit is a chore: dependency updates of the tooling never trigger a release.",
+      "matchPackageNames": ["*"],
+      "semanticCommitType": "chore"
+    },
     {
       "matchDepTypes": ["engines"],
       "enabled": false
     },
     {
+      "description": "The supported ranges are a product decision, not a dependency update.",
       "matchDepTypes": ["peerDependencies"],
-      "rangeStrategy": "widen"
+      "enabled": false
     },
     {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "groupName": "all dependencies",
-      "semanticCommitType": "chore"
+      "automerge": true
     },
     {
       "matchUpdateTypes": ["major"],
-      "semanticCommitType": "fix"
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions"
+    },
+    {
+      "description": "Expo decides these versions: upgrade the SDK by hand with `npx expo install --fix`.",
+      "matchFileNames": ["demos/react-native/package.json"],
+      "matchPackageNames": ["expo", "expo-*", "react", "react-dom", "react-native", "react-native-*", "@types/react"],
+      "enabled": false
     }
-  ],
-  "automerge": true
+  ]
 }
