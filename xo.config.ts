@@ -22,7 +22,9 @@ function platformBoundary(files: string[], forbidden: ImportPattern[]): XoConfig
 
 const xoConfig: FlatXoConfig = [
 	{
-		// The demos are separate apps, checked by their own toolchains (tsc, ESLint, Expo).
+		// The demos are separate apps, checked by their own toolchains (tsc, ESLint, Expo). The lint
+		// scripts also pass `--ignore "demos/**"`: xo reads the tsconfig of every file it finds before
+		// applying these ignores, and the demos' tsconfigs extend packages only their own installs have.
 		ignores: ['node_modules', 'dist', 'demos'],
 	},
 	{
