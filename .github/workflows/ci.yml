@@ -1,10 +1,9 @@
 name: CI
 
+# Every change to main goes through a pull request (required, up to date, squash-merged), so the
+# checks run on exactly what gets merged; the release workflow checks the package again itself.
 on:
   pull_request:
-  push:
-    branches:
-      - 'main'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -167,7 +166,6 @@ jobs:
   # -------- The version this pull request would release --------
   next-version:
     name: Next version (dry run)
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -190,7 +188,6 @@ jobs:
   # -------- Secrets --------
   trufflehog:
     name: TruffleHog
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
