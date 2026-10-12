@@ -421,13 +421,44 @@ function Spotlight({hole, transition, theme}: SpotlightProps): ReactNode {
 // ---------------------------------------------------------------------------------------------
 
 /** Positions the tooltip with native-driven transforms, plays its entrance, reports its size and takes accessibility focus. */
-function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize, onIntent}: TooltipFrameProps): ReactNode {
+function TooltipFrame({
+  children,
+  layout,
+  entrance,
+  isBusy,
+  isWaiting,
+  isHidden,
+  onSize,
+  onIntent,
+}: TooltipFrameProps): ReactNode {
   const [values] = useState(() => ({
     x: new Animated.Value(layout.x),
     y: new Animated.Value(layout.y),
     progress: new Animated.Value(0),
+    contentOpacity: new Animated.Value(1),
   }));
   const containerRef = useRef<ComponentRef<typeof Animated.View> | null>(null);
+
+  // The next step takes a moment to prepare: dim the content, the tour is working. Nothing runs
+  // until the first wait.
+  const hasWaited = useRef(false);
+  useEffect(() => {
+    if (!isWaiting && !hasWaited.current) {
+      return undefined;
+    }
+
+    hasWaited.current = true;
+    const animation = Animated.timing(values.contentOpacity, {
+      toValue: isWaiting ? motion.waitingOpacity : 1,
+      duration: entrance.durationMs,
+      easing: standardEasing,
+      useNativeDriver,
+    });
+    animation.start();
+    return (): void => {
+      animation.stop();
+    };
+  }, [values, isWaiting, entrance.durationMs]);
 
   // Follow layout changes instantly.
   useIsomorphicLayoutEffect(() => {
@@ -506,7 +537,7 @@ function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize, onI
           onSize({width, height});
         }}
       >
-        {children}
+        <Animated.View style={{opacity: values.contentOpacity}}>{children}</Animated.View>
       </Animated.View>
     </View>
   );

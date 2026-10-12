@@ -108,6 +108,9 @@ function OverlayContent({
     visibleSince.current = isVisible ? Date.now() : undefined;
   }, [isVisible]);
   const spotlight = useSpotlight(view, isVisible, isReducedMotion);
+  // Presses are ignored while the next step is prepared; when that takes a moment, the tooltip shows it.
+  const isBusy = phase === 'preparing' && !isClosing;
+  const isWaiting = useDelayedFlag(isBusy && shown !== undefined, motion.waitingDimDelayMs);
   const announcement = useAnnouncement(shown, totalSteps, i18n, isClosing);
 
   // Fade out, then unmount.
@@ -199,7 +202,8 @@ function OverlayContent({
             Tooltip={Tooltip}
             shown={shown}
             totalSteps={totalSteps}
-            isBusy={phase === 'preparing' && !isClosing}
+            isBusy={isBusy}
+            isWaiting={isWaiting}
             isHidden={phase === 'revealing'}
             isDelayed={spotlight.isMorphing}
             isReducedMotion={isReducedMotion}
@@ -230,6 +234,7 @@ type ShownTooltipProps = {
   readonly shown: ShownStep;
   readonly totalSteps: number;
   readonly isBusy: boolean;
+  readonly isWaiting: boolean;
   readonly isHidden: boolean;
   /** Enters a moment later, while the spotlight is still moving to the target. */
   readonly isDelayed: boolean;
@@ -247,6 +252,7 @@ function ShownTooltip({
   shown,
   totalSteps,
   isBusy,
+  isWaiting,
   isHidden,
   isDelayed,
   isReducedMotion,
@@ -272,6 +278,7 @@ function ShownTooltip({
       layout={layout}
       entrance={entrance}
       isBusy={isBusy}
+      isWaiting={isWaiting}
       isHidden={isHidden}
       onSize={onSize}
       onIntent={onIntent}

@@ -82,6 +82,12 @@ export const tourCss = `
 .rtk-tooltip[data-entering] {
   animation: rtk-enter var(--rtk-enter-duration, 200ms) var(--rtk-ease) var(--rtk-enter-delay, 0ms) both;
 }
+/* The next step takes a moment to prepare: the tour is working, presses wait. */
+.rtk-tooltip[data-waiting] > * {
+  opacity: var(--rtk-waiting-opacity, 0.6);
+  transition: opacity var(--rtk-fade-duration, 200ms) var(--rtk-ease);
+}
+.rtk-tooltip[data-waiting], .rtk-tooltip[data-waiting] * { cursor: progress !important; }
 .rtk-measure {
   position: fixed !important;
   top: 0 !important;

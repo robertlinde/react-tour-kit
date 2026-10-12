@@ -3,6 +3,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {page} from 'vitest/browser';
 import type {Insets} from '../../src/shared/geometry/geometry.type.js';
 import type {TourProviderBaseProps} from '../../src/shared/react/tour-provider-core.js';
+import {motion} from '../../src/shared/renderer/motion.js';
 import {useTour} from '../../src/shared/react/use-tour.hook.js';
 import type {TourContextType} from '../../src/shared/types/tour-context.type.js';
 import type {TourEndInfo, TourEndReason} from '../../src/shared/types/tour-end-info.type.js';
@@ -233,6 +234,25 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       gate.resolve();
       await harness.waitForStep('Second step');
       expect(startedTour().currentStep).toBe(1);
+    });
+
+    it('dims the tooltip when the next step takes a moment to prepare, and only then', async () => {
+      await renderScreen();
+      const gate = deferred();
+      startedTour().startTour([steps[0]!, {...steps[1]!, onBeforeStep: async () => gate.promise}], 'intro');
+      await harness.waitForStep('First step');
+      const contentOpacity = (): number => Number(getComputedStyle(harness.tooltip()!.firstElementChild!).opacity);
+      expect(contentOpacity()).toBe(1);
+      await page.getByRole('button', {name: 'Next'}).click();
+      // A quick step change shows nothing.
+      await sleep(motion.waitingDimDelayMs / 2);
+      expect(contentOpacity()).toBe(1);
+      await vi.waitFor(() => {
+        expect(contentOpacity()).toBeCloseTo(motion.waitingOpacity, 2);
+      });
+      gate.resolve();
+      await harness.waitForStep('Second step');
+      expect(contentOpacity()).toBe(1);
     });
 
     it('stays open when the dimmed area is pressed with closeOnOverlayClick={false}', async () => {

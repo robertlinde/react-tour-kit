@@ -89,6 +89,8 @@ export type TooltipFrameProps = {
   readonly entrance: Entrance;
   /** A step change is being prepared: ignore presses. */
   readonly isBusy: boolean;
+  /** The step change has taken a moment: show that the tour is working (dim the tooltip to `motion.waitingOpacity`). */
+  readonly isWaiting: boolean;
   /** The next target is being scrolled into view: hide the tooltip (keep its size). */
   readonly isHidden: boolean;
   readonly onSize: (size: Size) => void;

@@ -17,8 +17,13 @@ export const motion = {
   /** Distance (from the target's side) and scale the tooltip enters from. */
   enterOffset: 6,
   enterScale: 0.96,
-  /** If the first step takes longer than this to prepare (navigation, data), the screen is dimmed meanwhile. */
+  /**
+   * If a step takes longer than this to prepare (navigation, data), the tour shows that it is
+   * working: before the first step the screen is dimmed, later the tooltip is.
+   */
   waitingDimDelayMs: 300,
+  /** Opacity of the tooltip meanwhile. */
+  waitingOpacity: 0.6,
   /** Control points of the standard easing curve (`cubic-bezier`). */
   easing: [0.2, 0, 0, 1],
 } as const;

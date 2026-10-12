@@ -2,6 +2,12 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.0.4
+
+### Fixed
+
+- When the next step takes a moment to prepare (`onBeforeStep` loading data, a target that is still rendering), the tooltip now shows that the tour is working: it dims, on the web with a progress cursor. Before, it stayed unchanged and Next seemed to do nothing until the step appeared. Applies to the built-in and custom tooltips, on the web and React Native.
+
 ## 1.0.3
 
 ### Fixed
