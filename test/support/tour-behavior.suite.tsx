@@ -3,6 +3,7 @@ import {afterEach, describe, expect, it, vi} from 'vitest';
 import {page} from 'vitest/browser';
 import type {Insets} from '../../src/shared/geometry/geometry.type.js';
 import type {TourProviderBaseProps} from '../../src/shared/react/tour-provider-core.js';
+import {motion} from '../../src/shared/renderer/motion.js';
 import {useTour} from '../../src/shared/react/use-tour.hook.js';
 import type {TourContextType} from '../../src/shared/types/tour-context.type.js';
 import type {TourEndInfo, TourEndReason} from '../../src/shared/types/tour-end-info.type.js';
@@ -233,6 +234,39 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       gate.resolve();
       await harness.waitForStep('Second step');
       expect(startedTour().currentStep).toBe(1);
+    });
+
+    it('shows a spinner, and no highlight, while the next step takes a moment to prepare', async () => {
+      await renderScreen();
+      const gate = deferred();
+      startedTour().startTour([steps[0]!, {...steps[1]!, onBeforeStep: async () => gate.promise}], 'intro');
+      await harness.waitForStep('First step');
+      const spinner = page.getByRole('progressbar', {name: 'Loading…'});
+      await page.getByRole('button', {name: 'Next'}).click();
+      // A quick step change shows nothing.
+      await sleep(motion.waitingDelayMs / 2);
+      expect(spinner.query()).toBeNull();
+      await expect.element(spinner).toBeVisible();
+      expect(harness.tooltip()).toBeNull();
+      gate.resolve();
+      await harness.waitForStep('Second step');
+      expect(spinner.query()).toBeNull();
+    });
+
+    it('can be left while it waits for a step, with a press on the dimmed area', async () => {
+      const onTourEnd = vi.fn<(id: string | undefined, info: TourEndInfo) => void>();
+      await renderScreen({onTourEnd});
+      startedTour().startTour([steps[0]!, {...steps[1]!, onBeforeStep: async () => deferred().promise}], 'intro');
+      await harness.waitForStep('First step');
+      // Where the first step's highlight was: it has closed, so this is the dimmed area now.
+      const target = harness.rectOf('first');
+      await page.getByRole('button', {name: 'Next'}).click();
+      await expect.element(page.getByRole('progressbar', {name: 'Loading…'})).toBeVisible();
+      await sleep(motion.morphMs + 50);
+      await harness.pressAt({x: target.left + target.width / 2, y: target.top + target.height / 2});
+      await vi.waitFor(() => {
+        expect(onTourEnd).toHaveBeenCalledWith('intro', expect.objectContaining({reason: 'blur'}));
+      });
     });
 
     it('stays open when the dimmed area is pressed with closeOnOverlayClick={false}', async () => {

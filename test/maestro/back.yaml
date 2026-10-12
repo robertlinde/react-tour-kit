@@ -13,14 +13,47 @@ name: Goes back across screens
 - extendedWaitUntil:
     visible: 'Welcome to react-tour-kit'
     timeout: 10000
-- repeat:
-    times: 7
-    commands:
-      - tapOn:
-          id: 'rtk-next'
-      - waitForAnimationToEnd
+# One step at a time: Next is ignored while the tour waits for a step (one of them loads data first).
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Highlight anything'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Smart placement'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Waits for your data'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Horizontal lists'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Below the fold'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Across screens'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
+- extendedWaitUntil:
+    visible: 'Long lists'
+    timeout: 10000
+- tapOn:
+    id: 'rtk-next'
 - extendedWaitUntil:
     visible: 'Modal screens'
+    timeout: 10000
 - tapOn:
     id: 'rtk-prev'
 - extendedWaitUntil:
@@ -37,6 +70,11 @@ name: Goes back across screens
     id: 'rtk-prev'
 - extendedWaitUntil:
     visible: 'Horizontal lists'
+- tapOn:
+    id: 'rtk-prev'
+- extendedWaitUntil:
+    visible: 'Waits for your data'
+    timeout: 10000
 - tapOn:
     id: 'rtk-prev'
 - extendedWaitUntil:

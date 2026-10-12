@@ -17,7 +17,7 @@ name: Runs the whole tour
 - extendedWaitUntil:
     visible: 'Welcome to react-tour-kit'
     timeout: 10000
-- assertVisible: '1 of 9'
+- assertVisible: '1 of 10'
 - tapOn:
     id: 'rtk-next'
 - extendedWaitUntil:
@@ -26,6 +26,12 @@ name: Runs the whole tour
     id: 'rtk-next'
 - extendedWaitUntil:
     visible: 'Smart placement'
+- tapOn:
+    id: 'rtk-next'
+# The step's onBeforeStep loads data first: a spinner shows meanwhile.
+- extendedWaitUntil:
+    visible: 'Waits for your data'
+    timeout: 10000
 - tapOn:
     id: 'rtk-next'
 - extendedWaitUntil:
@@ -50,7 +56,7 @@ name: Runs the whole tour
     id: 'rtk-next'
 - extendedWaitUntil:
     visible: "That's it!"
-- assertVisible: '9 of 9'
+- assertVisible: '10 of 10'
 - tapOn:
     id: 'rtk-next'
 - extendedWaitUntil:

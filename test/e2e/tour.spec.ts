@@ -24,6 +24,11 @@ test('runs the whole cross-page tour', async ({page}) => {
   await startTour(page);
   await next(page, 'Highlight anything');
   await next(page, 'Smart placement');
+  // onBeforeStep refreshes the orders first: the tour shows a spinner, and no highlight, meanwhile.
+  await page.getByRole('button', {name: 'Next'}).click();
+  await expect(page.getByRole('progressbar', {name: 'Loading…'})).toBeVisible();
+  await expect(page.getByRole('dialog', {name: 'Waits for your data'})).toBeVisible();
+  await expect(page.getByRole('progressbar')).toHaveCount(0);
   await next(page, 'Below the fold');
   await expect(page.locator('[data-tour="install"]')).toBeInViewport({ratio: 1});
   await next(page, 'Across pages');
@@ -55,7 +60,13 @@ test('gives focus back to the button that started the tour', async ({page}) => {
 
 test('navigates back across pages', async ({page}) => {
   await startTour(page);
-  for (const title of ['Highlight anything', 'Smart placement', 'Below the fold', 'Across pages']) {
+  for (const title of [
+    'Highlight anything',
+    'Smart placement',
+    'Waits for your data',
+    'Below the fold',
+    'Across pages',
+  ]) {
     await next(page, title);
   }
 
@@ -65,16 +76,16 @@ test('navigates back across pages', async ({page}) => {
 
 test('going back keeps the target clear of the sticky navigation', async ({page}) => {
   await startTour(page);
-  for (const title of ['Highlight anything', 'Smart placement', 'Below the fold']) {
+  for (const title of ['Highlight anything', 'Smart placement', 'Waits for your data', 'Below the fold']) {
     await next(page, title);
   }
 
   await page.getByRole('button', {name: 'Back'}).click();
-  await expect(page.getByRole('dialog', {name: 'Smart placement'})).toBeVisible();
+  await expect(page.getByRole('dialog', {name: 'Waits for your data'})).toBeVisible();
   await expect(tooltip(page)).not.toHaveAttribute('data-entering');
   const {navBottom, targetTop} = await page.evaluate(() => ({
     navBottom: document.querySelector('.nav')!.getBoundingClientRect().bottom,
-    targetTop: document.querySelector('[data-tour="feature-1"]')!.getBoundingClientRect().top,
+    targetTop: document.querySelector('[data-tour="orders"]')!.getBoundingClientRect().top,
   }));
   expect(targetTop).toBeGreaterThanOrEqual(navBottom);
 });

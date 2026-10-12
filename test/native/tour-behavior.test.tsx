@@ -23,7 +23,13 @@ function element(testId: string): HTMLElement {
   return found;
 }
 
-const tooltip = (): HTMLElement | null => document.querySelector<HTMLElement>('[data-testid="rtk-tooltip"]');
+function tooltip(): HTMLElement | null {
+  const frame = document.querySelector<HTMLElement>('[data-testid="rtk-tooltip"]');
+  // Hidden (kept for its size, its container transparent) while the tour scrolls to the next target
+  // or waits for it: not on screen.
+  const container = frame?.parentElement;
+  return container && getComputedStyle(container).opacity === '0' ? null : frame;
+}
 
 function Target({id, style}: {readonly id: string; readonly style?: {readonly marginLeft?: number}}): ReactNode {
   const ref = useTourTarget(id);

@@ -1,4 +1,5 @@
 import type {TourStep} from '@robertlinde/react-tour-kit/react';
+import {refreshOrders} from './orders.ts';
 
 /**
  * A tour across two pages. Every step first opens the page it needs, so the tour also works when
@@ -36,6 +37,15 @@ export function createDemoTour(navigate: (path: string) => void): TourStep[] {
       content: 'Asked for the right side; flips automatically when there is no room.',
       placement: 'right',
     }),
+    {
+      target: '[data-tour="orders"]',
+      title: 'Waits for your data',
+      content: 'onBeforeStep refreshed these orders first. While that took a moment, the tour showed a spinner.',
+      async onBeforeStep() {
+        open('/');
+        await refreshOrders();
+      },
+    },
     on('/', {
       target: '[data-tour="install"]',
       title: 'Below the fold',

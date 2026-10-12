@@ -31,7 +31,7 @@ name: Closes on outside tap, custom tooltip
     visible: 'Welcome to react-tour-kit'
     timeout: 10000
 - assertVisible: 'Skip'
-- assertVisible: '1/9'
+- assertVisible: '1/10'
 - tapOn: 'Skip'
 - extendedWaitUntil:
     notVisible: 'Welcome to react-tour-kit'

@@ -252,9 +252,49 @@ export const tourCss = `
   }
 }
 
+/* While a step takes a while to prepare: a spinner in the middle, on the tooltip's background. */
+.rtk-waiting {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  translate: -50% -50%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 !important;
+  border-radius: var(--rtk-radius);
+  background: var(--rtk-bg);
+  box-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.35), 0 4px 12px -6px rgba(15, 23, 42, 0.2);
+  pointer-events: none !important;
+  animation: rtk-fade-in var(--rtk-fade-duration, 200ms) var(--rtk-ease) both;
+}
+.rtk-spinner {
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(127, 127, 127, 0.25);
+  border: 3px solid color-mix(in srgb, var(--rtk-primary) 20%, transparent);
+  border-top-color: var(--rtk-primary);
+  border-radius: 50%;
+  animation: rtk-spin 0.8s linear infinite;
+}
+@keyframes rtk-fade-in {
+  from { opacity: 0; }
+}
+@keyframes rtk-spin {
+  to { rotate: 1turn; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rtk-spinner { animation-duration: 2s; }
+}
+
 @media (forced-colors: active) {
   .rtk-spotlight { outline: 3px solid Highlight; }
-  .rtk-card { border: 1px solid CanvasText; }
+  .rtk-card, .rtk-waiting { border: 1px solid CanvasText; }
+  .rtk-spinner { border-color: GrayText; border-top-color: Highlight; }
   /* Without backgrounds, a border is what shows a button is one. */
   .rtk-button { border: 1px solid ButtonText !important; }
   .rtk-button:disabled { border-color: GrayText !important; }

@@ -2,6 +2,13 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.1.0
+
+### Added
+
+- A waiting state: when a step takes a moment to prepare (`onBeforeStep` loading data or navigating, a target that is still rendering), the highlight closes, the screen is dimmed and a spinner appears in the middle, on the web and React Native, with built-in and custom tooltips alike. Before, the previous step stayed unchanged and Next seemed to do nothing until the next one appeared. Pressing the dimmed area meanwhile leaves the tour.
+- `i18n.loadingAriaLabel` (default `'Loading…'`): what screen readers announce while the tour waits, and the spinner's accessible name.
+
 ## 1.0.3
 
 ### Fixed

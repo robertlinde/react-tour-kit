@@ -28,6 +28,7 @@ import type {
   TextPartProps,
   TooltipFrameProps,
   TourRenderer,
+  WaitingProps,
 } from '../../shared/renderer/renderer.type.js';
 import {handlesKey, pageDirection} from '../dom/elements.util.js';
 import {keepReachable} from '../dom/keep-reachable.util.js';
@@ -473,6 +474,15 @@ function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize}: To
   );
 }
 
+/** A spinner in the middle of the screen; presses go through to the dimmed area. */
+function Waiting({label}: WaitingProps): ReactNode {
+  return (
+    <div className="rtk-waiting" role="progressbar" aria-label={label}>
+      <span aria-hidden="true" className="rtk-spinner" />
+    </div>
+  );
+}
+
 function MeasureFrame({children, maxWidth, maxHeight, onSize}: MeasureFrameProps): ReactNode {
   const ref = useRef<HTMLDivElement | null>(null);
   useIsomorphicLayoutEffect(() => {
@@ -611,4 +621,4 @@ const card: CardParts = {
 };
 
 /** How the web draws the tour. */
-export const webRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, card};
+export const webRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, Waiting, card};

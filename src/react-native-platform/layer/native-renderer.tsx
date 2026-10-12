@@ -10,6 +10,7 @@ import {
 } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Animated,
   BackHandler,
   Easing,
@@ -46,6 +47,7 @@ import type {
   TextPartProps,
   TooltipFrameProps,
   TourRenderer,
+  WaitingProps,
 } from '../../shared/renderer/renderer.type.js';
 
 const emptySize: Size = {width: 0, height: 0};
@@ -512,6 +514,36 @@ function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize, onI
   );
 }
 
+/** A spinner in the middle of the layer, faded in on the UI thread; presses go through to the dimmed area. */
+function Waiting({label, theme}: WaitingProps): ReactNode {
+  const [opacity] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: motion.fadeInMs,
+      easing: standardEasing,
+      useNativeDriver,
+    });
+    animation.start();
+    return (): void => {
+      animation.stop();
+    };
+  }, [opacity]);
+
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.waitingLayer]}>
+      <Animated.View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={label}
+        style={[styles.card, styles.waitingCard, {backgroundColor: theme.tooltipBackground, opacity}]}
+      >
+        <ActivityIndicator color={theme.primaryColor} />
+      </Animated.View>
+    </View>
+  );
+}
+
 function MeasureFrame({children, maxWidth, maxHeight, onSize}: MeasureFrameProps): ReactNode {
   return (
     <View
@@ -728,7 +760,7 @@ const card: CardParts = {
 };
 
 /** How React Native draws the tour. */
-export const nativeRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, card};
+export const nativeRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, Waiting, card};
 
 const styles = StyleSheet.create({
   piece: {position: 'absolute', top: 0, left: 0},
@@ -737,6 +769,8 @@ const styles = StyleSheet.create({
   verticalBar: {width: ringWidth, height: barLength},
   hidden: {opacity: 0},
   measure: {position: 'absolute', top: 0, left: 0, opacity: 0},
+  waitingLayer: {alignItems: 'center', justifyContent: 'center'},
+  waitingCard: {width: 56, height: 56, alignItems: 'center', justifyContent: 'center'},
   card: {
     borderRadius: 14,
     ...Platform.select({

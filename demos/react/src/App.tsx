@@ -2,6 +2,7 @@ import {type ReactNode, useEffect, useState} from 'react';
 import {BrowserRouter, Link, Route, Routes, useNavigate} from 'react-router-dom';
 import {TourProvider, type TourTheme, type TourTooltipProps, useTour} from '@robertlinde/react-tour-kit/react';
 import {Lab} from './lab.tsx';
+import {useOrders} from './orders.ts';
 import {createDemoTour} from './tour.tsx';
 import './App.css';
 
@@ -116,6 +117,7 @@ function Navigation({
 function HomePage(): ReactNode {
   const {startTour, isActive, currentStep, steps} = useTour();
   const navigate = useNavigate();
+  const {orders, isLoading} = useOrders();
 
   return (
     <div className="page">
@@ -144,6 +146,17 @@ function HomePage(): ReactNode {
               <p>A real modal dialog: focus moves in and back, keyboard navigation, screen-reader friendly.</p>
             </div>
           </div>
+        </section>
+
+        <section className="orders-section" data-tour="orders">
+          <h2>Recent orders{isLoading ? ' · updating…' : ''}</h2>
+          <ul className="orders">
+            {orders.map((order) => (
+              <li key={order.id}>
+                <strong>{order.table}</strong> {order.items}
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="cta-section">
