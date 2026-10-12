@@ -2,6 +2,16 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.0.3
+
+### Fixed
+
+Tours started inside an app's own modal dialog (Radix and shadcn/ui, for example):
+
+- Screen readers could not reach the tour: the dialog library hid it along with the rest of the page (`aria-hidden`). Libraries that make the rest of the page `inert` blocked it entirely.
+- <kbd>Esc</kbd> closed the app's dialog underneath instead of the tour. While a tour is open, <kbd>Esc</kbd> now always closes the tour, also when a control in a custom tooltip has focus.
+- A long tooltip did not scroll with the mouse wheel or touch.
+
 ## 1.0.2
 
 ### Fixed

@@ -30,6 +30,7 @@ import type {
   TourRenderer,
 } from '../../shared/renderer/renderer.type.js';
 import {handlesKey, pageDirection} from '../dom/elements.util.js';
+import {keepReachable} from '../dom/keep-reachable.util.js';
 import {lockScroll} from '../dom/scroll-lock.util.js';
 import {injectTourStyles} from './styles.js';
 
@@ -154,13 +155,38 @@ function Layer({
     const trigger = document.activeElement;
     openModal(dialog);
     const unlock = lockScroll(dialog);
+    const stopKeepingReachable = keepReachable(dialog);
     return (): void => {
+      stopKeepingReachable();
       unlock();
       reopening.current = true;
       closeModal(dialog);
       restoreFocus(trigger, dialog);
     };
   }, []);
+
+  // Escape belongs to the topmost modal, the tour. Modal libraries underneath listen for it on the
+  // document before it reaches the tour (Radix, in the capture phase): take it on the window first.
+  useEffect(() => {
+    if (!isInteractive) {
+      return undefined;
+    }
+
+    const onEscape = (event: KeyboardEvent): void => {
+      if (event.key !== 'Escape' || event.isComposing || event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+      }
+
+      event.stopPropagation();
+      event.preventDefault();
+      onIntent('escape');
+    };
+
+    globalThis.addEventListener('keydown', onEscape, {capture: true});
+    return (): void => {
+      globalThis.removeEventListener('keydown', onEscape, {capture: true});
+    };
+  }, [isInteractive, onIntent]);
 
   // If the app opened its own modal (in onBeforeStep), move the tour back on top of it.
   useEffect(() => {
@@ -226,12 +252,6 @@ function Layer({
       event.ctrlKey ||
       event.metaKey
     ) {
-      return;
-    }
-
-    if (key === 'Escape') {
-      event.preventDefault();
-      onIntent('escape');
       return;
     }
 
