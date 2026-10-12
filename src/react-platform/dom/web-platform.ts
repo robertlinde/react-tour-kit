@@ -19,8 +19,8 @@ export type WebPlatform = PlatformAdapter & {
 /**
  * Events that must not reach the app's listeners on `<body>`, `document` or `window`: "click
  * outside" handlers of menus and popovers (which would close the menu a step highlights), focus
- * traps of the app's own dialogs, and keyboard shortcuts. The page is inert while the tour is
- * open, so nothing in it expects them.
+ * traps and scroll locks of the app's own dialogs (which would stop a long tooltip from scrolling),
+ * and keyboard shortcuts. The page is inert while the tour is open, so nothing in it expects them.
  */
 const isolatedEvents = [
   'pointerdown',
@@ -28,7 +28,9 @@ const isolatedEvents = [
   'mousedown',
   'mouseup',
   'touchstart',
+  'touchmove',
   'touchend',
+  'wheel',
   'click',
   'dblclick',
   'auxclick',
@@ -183,7 +185,8 @@ export function createWebPlatform(): WebPlatform {
       };
 
       for (const type of isolatedEvents) {
-        element.addEventListener(type, stop);
+        // Passive: it never cancels anything, so scrolling does not wait for it.
+        element.addEventListener(type, stop, {passive: true});
       }
 
       document.body.append(element);

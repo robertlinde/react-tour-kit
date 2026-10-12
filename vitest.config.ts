@@ -35,7 +35,9 @@ export default defineConfig({
           setupFiles: ['test/support/browser-setup.ts'],
           browser: browser(),
         },
-        optimizeDeps: {include: ['react', 'react-dom', 'react-dom/client', 'vitest-browser-react']},
+        optimizeDeps: {
+          include: ['react', 'react-dom', 'react-dom/client', 'vitest-browser-react', '@radix-ui/react-dialog'],
+        },
       },
       {
         extends: true,
