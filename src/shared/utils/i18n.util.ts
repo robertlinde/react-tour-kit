@@ -9,6 +9,7 @@ export const defaultI18n: ResolvedI18n = {
   stepCounterTemplate: '{current} of {total}',
   closeAriaLabel: 'Close tour',
   dotAriaLabelTemplate: 'Go to step {step}',
+  loadingAriaLabel: 'Loading…',
 };
 
 const i18nKeys = [
@@ -18,6 +19,7 @@ const i18nKeys = [
   'stepCounterTemplate',
   'closeAriaLabel',
   'dotAriaLabelTemplate',
+  'loadingAriaLabel',
 ] as const satisfies ReadonlyArray<keyof TourI18n>;
 
 export function resolveI18n(i18n: TourI18n | undefined): ResolvedI18n {

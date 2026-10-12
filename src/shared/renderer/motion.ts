@@ -18,12 +18,10 @@ export const motion = {
   enterOffset: 6,
   enterScale: 0.96,
   /**
-   * If a step takes longer than this to prepare (navigation, data), the tour shows that it is
-   * working: before the first step the screen is dimmed, later the tooltip is.
+   * If a step takes longer than this to prepare (navigation, data, a target that is still
+   * rendering), the tour shows that it is waiting: the highlight closes and a spinner appears.
    */
-  waitingDimDelayMs: 300,
-  /** Opacity of the tooltip meanwhile. */
-  waitingOpacity: 0.6,
+  waitingDelayMs: 300,
   /** Control points of the standard easing curve (`cubic-bezier`). */
   easing: [0.2, 0, 0, 1],
 } as const;

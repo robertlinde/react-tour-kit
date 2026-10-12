@@ -70,6 +70,7 @@ const renderer: TourRenderer = {
   Spotlight: RecordingSpotlight,
   TooltipFrame: ReportsSize,
   MeasureFrame: ReportsSize,
+  Waiting: Nothing,
   card: {
     Card: Passthrough,
     Arrow: Nothing,

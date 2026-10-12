@@ -28,6 +28,7 @@ import type {
   TextPartProps,
   TooltipFrameProps,
   TourRenderer,
+  WaitingProps,
 } from '../../shared/renderer/renderer.type.js';
 import {handlesKey, pageDirection} from '../dom/elements.util.js';
 import {keepReachable} from '../dom/keep-reachable.util.js';
@@ -387,7 +388,7 @@ function overflowsFrame(frame: HTMLElement): boolean {
 }
 
 /** Positions the tooltip (with `translate`, so the entrance's `transform` never moves it), reports its size and takes focus. */
-function TooltipFrame({children, layout, entrance, isBusy, isWaiting, isHidden, onSize}: TooltipFrameProps): ReactNode {
+function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize}: TooltipFrameProps): ReactNode {
   const ref = useRef<HTMLDivElement | null>(null);
   const [isEntering, setIsEntering] = useState(true);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -447,7 +448,6 @@ function TooltipFrame({children, layout, entrance, isBusy, isWaiting, isHidden, 
     '--rtk-enter-scale': String(entrance.scale),
     '--rtk-enter-duration': `${entrance.durationMs}ms`,
     '--rtk-enter-delay': `${entrance.delayMs}ms`,
-    '--rtk-waiting-opacity': String(motion.waitingOpacity),
   };
 
   return (
@@ -458,7 +458,6 @@ function TooltipFrame({children, layout, entrance, isBusy, isWaiting, isHidden, 
       data-placement={layout.placement}
       data-entering={isEntering ? '' : undefined}
       data-hidden={isHidden ? '' : undefined}
-      data-waiting={isWaiting ? '' : undefined}
       data-overflowing={isOverflowing ? '' : undefined}
       aria-busy={isBusy ? 'true' : undefined}
       tabIndex={-1}
@@ -471,6 +470,15 @@ function TooltipFrame({children, layout, entrance, isBusy, isWaiting, isHidden, 
       }}
     >
       {children}
+    </div>
+  );
+}
+
+/** A spinner in the middle of the screen; presses go through to the dimmed area. */
+function Waiting({label}: WaitingProps): ReactNode {
+  return (
+    <div className="rtk-waiting" role="progressbar" aria-label={label}>
+      <span aria-hidden="true" className="rtk-spinner" />
     </div>
   );
 }
@@ -613,4 +621,4 @@ const card: CardParts = {
 };
 
 /** How the web draws the tour. */
-export const webRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, card};
+export const webRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, Waiting, card};

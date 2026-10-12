@@ -86,14 +86,17 @@ function OverlayContent({
   isClosing,
   onClosed,
 }: OverlayContentProps): ReactNode {
-  const {Layer, Backdrop, Spotlight} = renderer;
+  const {Layer, Backdrop, Spotlight, Waiting} = renderer;
   const id = useId();
   const titleId = `${id}title`;
   const descriptionId = `${id}description`;
   const {shown, phase, measure} = view;
   const totalSteps = view.steps.length;
   // The first step can take a while (navigation in onBeforeStep): dim the screen after a moment.
-  const isWaitingDimmed = useDelayedFlag(!shown && !isClosing, motion.waitingDimDelayMs);
+  const isWaitingDimmed = useDelayedFlag(!shown && !isClosing, motion.waitingDelayMs);
+  // Preparing a step takes a while: the highlight closes and a spinner shows that the tour is waiting.
+  const isPreparing = phase === 'preparing' && !isClosing;
+  const isWaiting = useDelayedFlag(isPreparing, motion.waitingDelayMs);
   // Once on screen, the overlay stays until the tour ends (also when another tour takes over).
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
   const isShowingSomething = shown !== undefined || isWaitingDimmed;
@@ -107,11 +110,8 @@ function OverlayContent({
   useEffect(() => {
     visibleSince.current = isVisible ? Date.now() : undefined;
   }, [isVisible]);
-  const spotlight = useSpotlight(view, isVisible, isReducedMotion);
-  // Presses are ignored while the next step is prepared; when that takes a moment, the tooltip shows it.
-  const isBusy = phase === 'preparing' && !isClosing;
-  const isWaiting = useDelayedFlag(isBusy && shown !== undefined, motion.waitingDimDelayMs);
-  const announcement = useAnnouncement(shown, totalSteps, i18n, isClosing);
+  const spotlight = useSpotlight(view, isVisible, isReducedMotion, isWaiting);
+  const announcement = useAnnouncement(view, i18n, isClosing, isWaiting);
 
   // Fade out, then unmount.
   useEffect(() => {
@@ -158,10 +158,11 @@ function OverlayContent({
 
   const onBackdropPress = (point: Point): void => {
     // Not while the overlay is still appearing (a double click on the button that started the
-    // tour), nor while a step change is under way (a second tap on Next falls through the busy tooltip).
+    // tour), nor right after a step change began (a second tap on Next falls through the busy
+    // tooltip). Once the tour shows that it is waiting, a press leaves it.
     const since = visibleSince.current;
     const hasFadedIn = since !== undefined && Date.now() - since >= motion.fadeInMs;
-    const isChangingStep = shown !== undefined && phase !== 'showing';
+    const isChangingStep = shown !== undefined && phase !== 'showing' && !isWaiting;
     if (!isOverlayDismissible || isClosing || !hasFadedIn || isChangingStep) {
       return;
     }
@@ -173,9 +174,6 @@ function OverlayContent({
   };
 
   const context = useMemo<RendererContextValue>(() => ({renderer, theme, i18n}), [renderer, theme, i18n]);
-  const counter = shown
-    ? formatTemplate(i18n.stepCounterTemplate, {current: shown.stepIndex + 1, total: totalSteps})
-    : '';
 
   return (
     <RendererContext.Provider value={context}>
@@ -187,7 +185,7 @@ function OverlayContent({
         theme={theme}
         titleId={shown ? titleId : undefined}
         descriptionId={shown ? descriptionId : undefined}
-        fallbackLabel={(shown ? textOf(shown.step.title) : '') || counter}
+        fallbackLabel={fallbackLabelOf(shown, totalSteps, i18n)}
         announcement={announcement}
         stepKey={shown?.transitionId}
         onIntent={onIntent}
@@ -202,9 +200,8 @@ function OverlayContent({
             Tooltip={Tooltip}
             shown={shown}
             totalSteps={totalSteps}
-            isBusy={isBusy}
-            isWaiting={isWaiting}
-            isHidden={phase === 'revealing'}
+            isBusy={isPreparing}
+            isHidden={phase === 'revealing' || isWaiting}
             isDelayed={spotlight.isMorphing}
             isReducedMotion={isReducedMotion}
             titleId={titleId}
@@ -212,6 +209,7 @@ function OverlayContent({
             onIntent={onIntent}
           />
         ) : null}
+        {isWaiting ? <Waiting label={i18n.loadingAriaLabel} theme={theme} /> : null}
         {measure && !isClosing ? (
           <MeasuredTooltip
             key={measure.id}
@@ -234,7 +232,6 @@ type ShownTooltipProps = {
   readonly shown: ShownStep;
   readonly totalSteps: number;
   readonly isBusy: boolean;
-  readonly isWaiting: boolean;
   readonly isHidden: boolean;
   /** Enters a moment later, while the spotlight is still moving to the target. */
   readonly isDelayed: boolean;
@@ -252,7 +249,6 @@ function ShownTooltip({
   shown,
   totalSteps,
   isBusy,
-  isWaiting,
   isHidden,
   isDelayed,
   isReducedMotion,
@@ -278,7 +274,6 @@ function ShownTooltip({
       layout={layout}
       entrance={entrance}
       isBusy={isBusy}
-      isWaiting={isWaiting}
       isHidden={isHidden}
       onSize={onSize}
       onIntent={onIntent}
@@ -372,20 +367,46 @@ type SpotlightState = {
   readonly isMorphing: boolean;
 };
 
+/** What the spotlight marks, and the key under which a move there is animated. */
+function spotlightTarget(
+  view: TourViewState,
+  isWaiting: boolean,
+): {readonly hole: Box | undefined; readonly key: string} {
+  const {shown, phase, revealHighlight} = view;
+  const shownKey = shown?.transitionId ?? 'none';
+  // While the tour waits for a step, nothing is highlighted: the hole closes.
+  if (isWaiting) {
+    return {hole: undefined, key: `waiting:${shownKey}`};
+  }
+
+  if (phase === 'revealing') {
+    return {
+      hole: revealHighlight ? inflate(revealHighlight, tourLayout.highlightPadding) : undefined,
+      key: `reveal:${shownKey}`,
+    };
+  }
+
+  const hole = shown?.highlight ? inflate(shown.highlight, tourLayout.highlightPadding) : undefined;
+  return {hole, key: `${shownKey}:${hole ? 'open' : 'closed'}`};
+}
+
 /**
  * Where the spotlight's hole is and how it gets there. While the next target is scrolled into
  * view, the hole goes with it (frame by frame, or straight to where it will end up); otherwise it
  * marks the step on screen. Moving to another step is animated; following a target that moves on
  * its own (layout changes, resizing) is instant, like the tooltip, also while the spotlight is
- * still on its way. Nothing animates before the overlay has appeared.
+ * still on its way. While the tour waits for a step, the hole closes. Nothing animates before the
+ * overlay has appeared.
  */
-function useSpotlight(view: TourViewState, isVisible: boolean, isReducedMotion: boolean): SpotlightState {
-  const {shown, phase, revealHighlight, followsScroll} = view;
+function useSpotlight(
+  view: TourViewState,
+  isVisible: boolean,
+  isReducedMotion: boolean,
+  isWaiting: boolean,
+): SpotlightState {
+  const {phase, followsScroll} = view;
   const isRevealing = phase === 'revealing';
-  const source = isRevealing ? revealHighlight : shown?.highlight;
-  const hole = source ? inflate(source, tourLayout.highlightPadding) : undefined;
-  const shownKey = shown?.transitionId ?? 'none';
-  const key = isRevealing ? `reveal:${shownKey}` : `${shownKey}:${hole ? 'open' : 'closed'}`;
+  const {hole, key} = spotlightTarget(view, isWaiting);
 
   // The key at which the overlay appeared: it appears in place, later changes animate.
   const [appearedAtKey, setAppearedAtKey] = useState<string | undefined>(undefined);
@@ -416,24 +437,35 @@ function useSpotlight(view: TourViewState, isVisible: boolean, isReducedMotion: 
 }
 
 /** "2 of 5: Title" when the step changes (the first step is announced by the tour appearing). */
-function useAnnouncement(
-  shown: ShownStep | undefined,
-  totalSteps: number,
-  i18n: ResolvedI18n,
-  isClosing: boolean,
-): string {
+function useAnnouncement(view: TourViewState, i18n: ResolvedI18n, isClosing: boolean, isWaiting: boolean): string {
+  const {shown, phase} = view;
   const [firstKey, setFirstKey] = useState<number | undefined>(undefined);
   if (shown && firstKey === undefined) {
     setFirstKey(shown.transitionId);
   }
 
-  if (!shown || isClosing || shown.transitionId === firstKey) {
+  // While the tour waits for a step, that is what is said; a step once it is on screen.
+  if (isWaiting) {
+    return i18n.loadingAriaLabel;
+  }
+
+  if (!shown || isClosing || phase !== 'showing' || shown.transitionId === firstKey) {
+    return '';
+  }
+
+  const counter = formatTemplate(i18n.stepCounterTemplate, {current: shown.stepIndex + 1, total: view.steps.length});
+  const title = textOf(shown.step.title);
+  return title ? `${counter}: ${title}` : counter;
+}
+
+/** Name of the tour dialog for a custom tooltip without a title element: the step's title, or its counter. */
+function fallbackLabelOf(shown: ShownStep | undefined, totalSteps: number, i18n: ResolvedI18n): string {
+  if (!shown) {
     return '';
   }
 
   const counter = formatTemplate(i18n.stepCounterTemplate, {current: shown.stepIndex + 1, total: totalSteps});
-  const title = textOf(shown.step.title);
-  return title ? `${counter}: ${title}` : counter;
+  return textOf(shown.step.title) || counter;
 }
 
 /** The plain text of React content (strings, numbers, arrays and the children of elements). */

@@ -10,6 +10,7 @@ import {
 } from 'react';
 import {
   AccessibilityInfo,
+  ActivityIndicator,
   Animated,
   BackHandler,
   Easing,
@@ -46,6 +47,7 @@ import type {
   TextPartProps,
   TooltipFrameProps,
   TourRenderer,
+  WaitingProps,
 } from '../../shared/renderer/renderer.type.js';
 
 const emptySize: Size = {width: 0, height: 0};
@@ -421,44 +423,13 @@ function Spotlight({hole, transition, theme}: SpotlightProps): ReactNode {
 // ---------------------------------------------------------------------------------------------
 
 /** Positions the tooltip with native-driven transforms, plays its entrance, reports its size and takes accessibility focus. */
-function TooltipFrame({
-  children,
-  layout,
-  entrance,
-  isBusy,
-  isWaiting,
-  isHidden,
-  onSize,
-  onIntent,
-}: TooltipFrameProps): ReactNode {
+function TooltipFrame({children, layout, entrance, isBusy, isHidden, onSize, onIntent}: TooltipFrameProps): ReactNode {
   const [values] = useState(() => ({
     x: new Animated.Value(layout.x),
     y: new Animated.Value(layout.y),
     progress: new Animated.Value(0),
-    contentOpacity: new Animated.Value(1),
   }));
   const containerRef = useRef<ComponentRef<typeof Animated.View> | null>(null);
-
-  // The next step takes a moment to prepare: dim the content, the tour is working. Nothing runs
-  // until the first wait.
-  const hasWaited = useRef(false);
-  useEffect(() => {
-    if (!isWaiting && !hasWaited.current) {
-      return undefined;
-    }
-
-    hasWaited.current = true;
-    const animation = Animated.timing(values.contentOpacity, {
-      toValue: isWaiting ? motion.waitingOpacity : 1,
-      duration: entrance.durationMs,
-      easing: standardEasing,
-      useNativeDriver,
-    });
-    animation.start();
-    return (): void => {
-      animation.stop();
-    };
-  }, [values, isWaiting, entrance.durationMs]);
 
   // Follow layout changes instantly.
   useIsomorphicLayoutEffect(() => {
@@ -537,7 +508,37 @@ function TooltipFrame({
           onSize({width, height});
         }}
       >
-        <Animated.View style={{opacity: values.contentOpacity}}>{children}</Animated.View>
+        {children}
+      </Animated.View>
+    </View>
+  );
+}
+
+/** A spinner in the middle of the layer, faded in on the UI thread; presses go through to the dimmed area. */
+function Waiting({label, theme}: WaitingProps): ReactNode {
+  const [opacity] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    const animation = Animated.timing(opacity, {
+      toValue: 1,
+      duration: motion.fadeInMs,
+      easing: standardEasing,
+      useNativeDriver,
+    });
+    animation.start();
+    return (): void => {
+      animation.stop();
+    };
+  }, [opacity]);
+
+  return (
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.waitingLayer]}>
+      <Animated.View
+        accessible
+        accessibilityRole="progressbar"
+        accessibilityLabel={label}
+        style={[styles.card, styles.waitingCard, {backgroundColor: theme.tooltipBackground, opacity}]}
+      >
+        <ActivityIndicator color={theme.primaryColor} />
       </Animated.View>
     </View>
   );
@@ -759,7 +760,7 @@ const card: CardParts = {
 };
 
 /** How React Native draws the tour. */
-export const nativeRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, card};
+export const nativeRenderer: TourRenderer = {Layer, Backdrop, Spotlight, TooltipFrame, MeasureFrame, Waiting, card};
 
 const styles = StyleSheet.create({
   piece: {position: 'absolute', top: 0, left: 0},
@@ -768,6 +769,8 @@ const styles = StyleSheet.create({
   verticalBar: {width: ringWidth, height: barLength},
   hidden: {opacity: 0},
   measure: {position: 'absolute', top: 0, left: 0, opacity: 0},
+  waitingLayer: {alignItems: 'center', justifyContent: 'center'},
+  waitingCard: {width: 56, height: 56, alignItems: 'center', justifyContent: 'center'},
   card: {
     borderRadius: 14,
     ...Platform.select({

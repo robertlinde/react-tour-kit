@@ -25,6 +25,8 @@ export type TourRenderer = {
   readonly TooltipFrame: ComponentType<TooltipFrameProps>;
   /** Renders a tooltip invisibly with given size limits and reports its size. */
   readonly MeasureFrame: ComponentType<MeasureFrameProps>;
+  /** A spinner in the middle of the layer, while the tour waits for a step that takes a while to prepare. */
+  readonly Waiting: ComponentType<WaitingProps>;
   /** The pieces of the built-in tooltip card. */
   readonly card: CardParts;
 };
@@ -89,8 +91,6 @@ export type TooltipFrameProps = {
   readonly entrance: Entrance;
   /** A step change is being prepared: ignore presses. */
   readonly isBusy: boolean;
-  /** The step change has taken a moment: show that the tour is working (dim the tooltip to `motion.waitingOpacity`). */
-  readonly isWaiting: boolean;
   /** The next target is being scrolled into view: hide the tooltip (keep its size). */
   readonly isHidden: boolean;
   readonly onSize: (size: Size) => void;
@@ -104,6 +104,12 @@ export type Entrance = {
   readonly scale: number;
   readonly durationMs: number;
   readonly delayMs: number;
+};
+
+export type WaitingProps = {
+  /** Accessible name of the spinner. */
+  readonly label: string;
+  readonly theme: ResolvedTheme;
 };
 
 export type MeasureFrameProps = {

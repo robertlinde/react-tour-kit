@@ -1,4 +1,4 @@
-import {type ComponentRef, createContext, createRef, type ReactNode, use, useState} from 'react';
+import {type ComponentRef, createContext, createRef, type ReactNode, use, useState, useSyncExternalStore} from 'react';
 import {StatusBar} from 'expo-status-bar';
 import {FlatList, Pressable, ScrollView, StyleSheet, Switch, Text, View} from 'react-native';
 import {SafeAreaProvider, useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -49,6 +49,53 @@ function on(screen: keyof Screens, step: TourStep): TourStep {
   };
 }
 
+type Order = {readonly id: number; readonly table: string; readonly items: string};
+type OrdersState = {readonly orders: readonly Order[]; readonly isLoading: boolean};
+
+const sampleOrders: readonly Order[] = [
+  {id: 1, table: 'Table 4', items: '2 × Pasta, 1 × Salad'},
+  {id: 2, table: 'Table 7', items: '3 × Pizza'},
+  {id: 3, table: 'Terrace 2', items: '1 × Soup, 2 × Lemonade'},
+];
+
+/** How long the demo's "server" takes to answer. */
+const ordersServerMs = 1500;
+
+/** Recent orders, as if from a server: refreshing them takes a moment. */
+let ordersState: OrdersState = {orders: sampleOrders, isLoading: false};
+const ordersListeners = new Set<() => void>();
+
+function setOrdersState(next: OrdersState): void {
+  ordersState = next;
+  for (const listener of ordersListeners) {
+    listener();
+  }
+}
+
+function subscribeToOrders(listener: () => void): () => void {
+  ordersListeners.add(listener);
+  return () => {
+    ordersListeners.delete(listener);
+  };
+}
+
+/** Loads the orders again; resolves once they are there. */
+async function refreshOrders(): Promise<void> {
+  setOrdersState({...ordersState, isLoading: true});
+  await new Promise((resolve) => {
+    setTimeout(resolve, ordersServerMs);
+  });
+  setOrdersState({orders: sampleOrders, isLoading: false});
+}
+
+function useOrders(): OrdersState {
+  return useSyncExternalStore(
+    subscribeToOrders,
+    () => ordersState,
+    () => ordersState,
+  );
+}
+
 const demoTour: TourStep[] = [
   on('Home', {
     target: 'header',
@@ -66,6 +113,15 @@ const demoTour: TourStep[] = [
     content: 'The tooltip picks the side with room and never leaves the safe area.',
     placement: 'top',
   }),
+  {
+    target: 'orders',
+    title: 'Waits for your data',
+    content: 'onBeforeStep refreshed these orders first. While that took a moment, the tour showed a spinner.',
+    async onBeforeStep() {
+      show('Home');
+      await refreshOrders();
+    },
+  },
   on('Home', {
     target: 'integration-last',
     title: 'Horizontal lists',
@@ -242,6 +298,21 @@ function Integrations(): ReactNode {
   );
 }
 
+function RecentOrders(): ReactNode {
+  const ref = useTourTarget('orders');
+  const {orders, isLoading} = useOrders();
+  return (
+    <View ref={ref} style={styles.card}>
+      <Text style={styles.cardTitle}>Recent orders{isLoading ? ' · updating…' : ''}</Text>
+      {orders.map((order) => (
+        <Text key={order.id} style={styles.cardText}>
+          <Text style={styles.orderTable}>{order.table}</Text> {order.items}
+        </Text>
+      ))}
+    </View>
+  );
+}
+
 function HomeScreen(): ReactNode {
   const {startTour, isActive, currentStep, steps} = useTour();
   // A ref the app already has: pass it in.
@@ -291,6 +362,8 @@ function HomeScreen(): ReactNode {
           title="Accessible"
           description="Screen-reader focus moves to the tooltip, the back button closes the tour."
         />
+
+        <RecentOrders />
 
         <Text style={styles.sectionTitle}>Integrations</Text>
       </View>
@@ -479,6 +552,10 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
     textAlign: 'center',
     lineHeight: 20,
+  },
+  orderTable: {
+    fontWeight: '600',
+    color: '#f9fafb',
   },
   integrations: {
     gap: 12,

@@ -1,4 +1,4 @@
-/** Texts of the built-in tooltip. Every key is optional. */
+/** Texts of the tour (most of them in the built-in tooltip). Every key is optional. */
 export type TourI18n = {
   /** @defaultValue `'Next'` */
   readonly nextLabel?: string;
@@ -12,4 +12,6 @@ export type TourI18n = {
   readonly closeAriaLabel?: string;
   /** Accessible name of each step dot; `{step}` and `{total}` are replaced. @defaultValue `'Go to step {step}'` */
   readonly dotAriaLabelTemplate?: string;
+  /** Accessible name of the spinner shown while a step takes a while to prepare. @defaultValue `'Loading…'` */
+  readonly loadingAriaLabel?: string;
 };
