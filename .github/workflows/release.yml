@@ -18,13 +18,13 @@ jobs:
       id-token: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: '0'
 
       - name: Get next version
         id: get_next_version
-        uses: thenativeweb/get-next-version@2.8.2
+        uses: thenativeweb/get-next-version@c43a909ffb1edc9e5444bc62a2f86504e8506e5f # 2.8.2
 
       # A re-run after the GitHub release failed: the tag exists, so there is no next version, but the release is missing.
       - name: Find an unfinished release
@@ -46,7 +46,7 @@ jobs:
 
       - name: Setup Node.js
         if: ${{ steps.get_next_version.outputs.hasNextVersion == 'true' }}
-        uses: actions/setup-node@v7.1.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
           registry-url: 'https://registry.npmjs.org'
