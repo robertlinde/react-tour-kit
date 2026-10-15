@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "showcase": "vite --mode showcase",
+    "build:showcase": "tsc -b && vite build --mode showcase",
+    "preview:showcase": "vite preview --mode showcase",
     "lint": "eslint .",
     "preview": "vite preview"
   },

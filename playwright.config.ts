@@ -1,7 +1,7 @@
 import {defineConfig, devices} from '@playwright/test';
 
 /**
- * End-to-end tests (test/e2e) against the web demo (demos/react).
+ * End-to-end tests (test/e2e) against the web demo and the showcase (demos/react).
  *
  * Locally the demo runs the library's source. In CI, TOUR_KIT_FROM_PACKAGE=1 makes the demo use
  * the packed tarball instead, so the tests cover exactly what gets published.
@@ -42,11 +42,21 @@ export default defineConfig({
       use: {...devices['Desktop Chrome'], viewport: {width: 1280, height: 800}, reducedMotion: 'reduce'},
     },
   ],
-  webServer: {
-    command: 'npm run build && npm run preview -- --port 4173 --strictPort',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !isCi,
-    timeout: 180_000,
-    cwd: './demos/react',
-  },
+  webServer: [
+    {
+      command: 'npm run build && npm run preview -- --port 4173 --strictPort',
+      url: 'http://localhost:4173',
+      reuseExistingServer: !isCi,
+      timeout: 180_000,
+      cwd: './demos/react',
+    },
+    // The showcase (test/e2e/showcase.spec.ts). Type-checked by the build above: no second `tsc -b`.
+    {
+      command: 'npx vite build --mode showcase && npm run preview:showcase -- --port 4174 --strictPort',
+      url: 'http://localhost:4174',
+      reuseExistingServer: !isCi,
+      timeout: 180_000,
+      cwd: './demos/react',
+    },
+  ],
 });

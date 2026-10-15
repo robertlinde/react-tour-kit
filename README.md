@@ -2,6 +2,17 @@
 
 Guided tours for React and React Native that never leave the screen.
 
+<p align="center">
+  <a href="https://robertlinde.github.io/react-tour-kit/">
+    <picture>
+      <source media="(prefers-reduced-motion: reduce)" srcset="https://raw.githubusercontent.com/robertlinde/react-tour-kit/main/.github/assets/demo-poster.png" />
+      <img src="https://raw.githubusercontent.com/robertlinde/react-tour-kit/main/.github/assets/demo.gif" width="100%" alt="An onboarding tour in a web app: it welcomes the user, highlights the search field and the New project button at the screen's edge, scrolls down to the activity feed, shows a spinner while the Team page loads, highlights Invite teammates there, and ends back on the Help button." />
+    </picture>
+  </a>
+</p>
+
+<p align="center"><a href="https://robertlinde.github.io/react-tour-kit/"><strong>Try the live demo →</strong></a></p>
+
 Highlight any element, explain it in a tooltip, and walk users through your app — across pages and screens, into scroll containers and modals. The tour takes care of everything around it: it waits for targets to appear, scrolls them into view (clear of sticky headers and floating buttons), keeps the tooltip on screen on every device, animates smoothly, and is accessible out of the box.
 
 ```tsx
@@ -575,7 +586,7 @@ The tour is rendered as a modal `<dialog>` in the browser's top layer, so it is 
 ## What the tour does for you
 
 - **Keeps everything in sight.** Before a step is shown, its target is scrolled into view — through every scroll container around it, including horizontal ones — with room for the tooltip. Elements that stay put while the page scrolls (sticky headers, cookie banners, floating buttons; any number, any shape) are detected and the target is scrolled clear of them, in both directions. Targets larger than the screen are aligned to their start. The tooltip is placed inside the visible screen minus safe areas and the on-screen keyboard, flips to another side when there is no room, and scrolls its own content if it is taller than the screen. When the window is resized or rotated, or your app or an animation moves the target, the tour follows.
-- **Waits instead of guessing.** Targets that are not rendered yet (lazy pages, animations, data loading) are awaited, event-driven, for up to 5 seconds. When a step takes a moment to prepare (more than 300 ms), the tour shows that it is waiting: the highlight closes, the screen is dimmed and a spinner appears in the middle (announced to screen readers as `loadingAriaLabel`). Pressing the dimmed area meanwhile leaves the tour.
+- **Waits instead of guessing.** Targets that are not rendered yet (lazy pages, animations, data loading) are awaited, event-driven, for up to 5 seconds. When a step takes a moment to prepare (more than 300 ms), the tour shows that it is waiting: the highlight closes, the screen is dimmed and a spinner appears in the middle (announced to screen readers as `loadingAriaLabel`). If the previous step's target goes away meanwhile (`onBeforeStep` navigated to another page, for example), that step does not stay over the new page: it goes at once. Pressing the dimmed area meanwhile leaves the tour.
 - **Animates.** The tour fades in, the highlight glides from target to target together with the scroll, and the tooltip enters from the side it is on. On React Native every animation runs on the UI thread, so it stays smooth while JavaScript is busy. With reduced motion turned on in the system, movement is replaced by short fades.
 - **Is accessible.** On the web the tour is a modal dialog (`aria-modal`, labelled by the step title, described by its content): focus moves into the tooltip and back to where it was when the tour ends, the rest of the page is inert, arrow keys work (but leave text fields, sliders, radio groups and other controls in a custom tooltip alone), <kbd>Esc</kbd> closes the tour, a long tooltip scrolls with the keyboard, and step changes are announced. Buttons have accessible names and large enough touch targets. In Windows high-contrast mode the highlight is drawn as an outline. On React Native, screen-reader focus moves to the tooltip, the app behind it is hidden from screen readers (in a `TourHost`, see [Modal screens](#modal-screens)), and the back button closes the tour.
 - **Costs nothing while idle.** Right after a step appears, the tour checks its target every frame until it has stayed put for a second (three at most), because animations can move it without any event (a React Native screen sliding in, for example). After that, while nothing moves, the tour does no work at all: no timers, no measuring, no re-rendering. Scrolling and resizing are followed once per frame, without re-rendering your app. `useTour()` only re-renders components when the tour's state changes.
@@ -617,9 +628,12 @@ The demos use the library's source directly, so every change is live there:
 
 ```bash
 npm run demo:web       # web demo: http://localhost:5173 — includes a /lab page with edge cases
+npm run demo:showcase  # the showcase: the live demo on GitHub Pages, deployed from main
 npm run demo:ios       # React Native demo in Expo Go (run `npm install` in demos/react-native first)
 npm run demo:android
 ```
+
+The animated preview at the top of this README is recorded from the showcase: `npm run demo:record` writes `.github/assets/demo.gif` and its still poster (it needs ffmpeg and gifski: `brew install ffmpeg gifski`). Record it again when the showcase or the look of the tour changes.
 
 All tests are in `test/` (see [ARCHITECTURE.md](./ARCHITECTURE.md#tests)). The React Native demo is tested with [Maestro](https://maestro.dev) flows: with the app open, run `maestro test test/maestro -e APP_ID=host.exp.Exponent`. To see the Android navigation bar setting in effect, build the app natively with `npx expo run:android`.
 

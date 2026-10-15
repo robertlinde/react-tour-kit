@@ -7,8 +7,17 @@ import {defineConfig} from 'vite';
 const fromPackage = process.env.TOUR_KIT_FROM_PACKAGE === '1';
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
 
-export default defineConfig({
+// `--mode showcase` builds the showcase (the live demo on GitHub Pages) instead of the test-bench demo.
+// It uses relative asset URLs and a hash router, so the same build works under any path.
+export default defineConfig(({mode}) => ({
   plugins: [react()],
+  ...(mode === 'showcase'
+    ? {
+        root: fileURLToPath(new URL('showcase', import.meta.url)),
+        base: './',
+        build: {outDir: fileURLToPath(new URL('dist-showcase', import.meta.url)), emptyOutDir: true},
+      }
+    : {}),
   resolve: {
     alias: fromPackage
       ? []
@@ -24,4 +33,4 @@ export default defineConfig({
   server: {
     fs: {allow: [repoRoot]},
   },
-});
+}));

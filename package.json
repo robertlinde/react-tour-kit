@@ -50,7 +50,7 @@
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "dev": "tsc -p tsconfig.build.json --watch",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tooling.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.tooling.json && tsc -p scripts",
     "lint": "xo --ignore \"demos/**\"",
     "lint:fix": "xo --fix --ignore \"demos/**\"",
     "format": "prettier --write .",
@@ -64,6 +64,8 @@
     "check:package": "publint --strict && attw --pack . --profile esm-only",
     "smoke:node": "node test/smoke-node.mjs",
     "demo:web": "npm run dev --prefix demos/react",
+    "demo:showcase": "npm run showcase --prefix demos/react",
+    "demo:record": "node scripts/record-demo.ts",
     "demo:ios": "npm run ios --prefix demos/react-native",
     "demo:android": "npm run android --prefix demos/react-native",
     "prepare": "husky || true"

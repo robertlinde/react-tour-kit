@@ -47,7 +47,7 @@ If you are about to write an `if` in a platform folder, ask whether it is a deci
 2. If it needs a new platform fact or a new drawing primitive, add it to `PlatformAdapter` or `TourRenderer`. Both platforms now fail to compile until they implement it — that is the point.
 3. Test the behaviour in the [shared behaviour suite](test/support/tour-behavior.suite.tsx). It runs against the web provider and the React Native provider (`tour-behavior.test.tsx` in `test/web` and `test/native`); a feature that works on only one of them fails there.
 4. If the feature adds an export, add it to both [`src/react.ts`](src/react.ts) and [`src/react-native.ts`](src/react-native.ts). The [entry parity test](test/unit/entry-parity.test.ts) fails when one entry exports something the other does not, or when they export different implementations of a shared name. Platform-only exports must be declared there, with the reason.
-5. Try it in both demos: `npm run demo:web`, `npm run demo:ios` / `npm run demo:android` (they run the source directly).
+5. Try it in both demos: `npm run demo:web`, `npm run demo:ios` / `npm run demo:android` (they run the source directly). If it changes how the tour looks, record the README's preview again from the showcase (`npm run demo:record`).
 
 ## What is platform-only, and why
 
@@ -73,13 +73,13 @@ Platform-only exports are listed in the entry parity test.
 
 All tests live in `test/`; the configuration files (`vitest.config.ts`, `playwright.config.ts`) are at the root.
 
-| Folder           | What                                                                    | Run with             |
-| ---------------- | ----------------------------------------------------------------------- | -------------------- |
-| `test/unit`      | engine, geometry, platform logic, entry parity (Node), mirroring `src/` | `npm run test:unit`  |
-| `test/web`       | the web provider in a real browser                                      | `npm test`           |
-| `test/native`    | the React Native provider, through react-native-web, in a real browser  | `npm test`           |
-| `test/jsdom`     | a whole tour in jsdom, as apps' own test suites run it                  | `npm test`           |
-| `test/support`   | the shared behaviour suite and helpers (fake adapter, browser setup)    |                      |
-| `test/e2e`       | the web demo on desktop and mobile browsers (Playwright)                | `npm run test:e2e`   |
-| `test/maestro`   | the React Native demo on simulators and devices (Maestro)               | see the README       |
-| `smoke-node.mjs` | the packed package, imported in plain Node with a server render         | `npm run smoke:node` |
+| Folder           | What                                                                      | Run with             |
+| ---------------- | ------------------------------------------------------------------------- | -------------------- |
+| `test/unit`      | engine, geometry, platform logic, entry parity (Node), mirroring `src/`   | `npm run test:unit`  |
+| `test/web`       | the web provider in a real browser                                        | `npm test`           |
+| `test/native`    | the React Native provider, through react-native-web, in a real browser    | `npm test`           |
+| `test/jsdom`     | a whole tour in jsdom, as apps' own test suites run it                    | `npm test`           |
+| `test/support`   | the shared behaviour suite and helpers (fake adapter, browser setup)      |                      |
+| `test/e2e`       | the web demo and the showcase on desktop and mobile browsers (Playwright) | `npm run test:e2e`   |
+| `test/maestro`   | the React Native demo on simulators and devices (Maestro)                 | see the README       |
+| `smoke-node.mjs` | the packed package, imported in plain Node with a server render           | `npm run smoke:node` |

@@ -243,14 +243,67 @@ export function describeTourBehavior(harness: TourBehaviorHarness): void {
       await harness.waitForStep('First step');
       const spinner = page.getByRole('progressbar', {name: 'Loading…'});
       await page.getByRole('button', {name: 'Next'}).click();
-      // A quick step change shows nothing.
+      // A quick step change shows nothing: the step on screen stays meanwhile.
       await sleep(motion.waitingDelayMs / 2);
       expect(spinner.query()).toBeNull();
+      expect(harness.tooltip()).not.toBeNull();
       await expect.element(spinner).toBeVisible();
       expect(harness.tooltip()).toBeNull();
       gate.resolve();
       await harness.waitForStep('Second step');
       expect(spinner.query()).toBeNull();
+    });
+
+    it('hides the step on screen at once when its target goes away while the next step is prepared', async () => {
+      let removeFirst: (() => void) | undefined;
+      function Leaving(): ReactNode {
+        const [isThere, setIsThere] = useState(true);
+        useEffect(() => {
+          removeFirst = () => {
+            setIsThere(false);
+          };
+        }, []);
+        return isThere ? <Target id="first" style={{marginLeft: 20}} /> : null;
+      }
+
+      await harness.render(
+        <>
+          <Capture />
+          <Spacer height={120} />
+          <Leaving />
+          <Spacer height={120} />
+          <Target id="second" style={{marginLeft: 200}} />
+        </>,
+      );
+      const gate = deferred();
+      startedTour().startTour(
+        [
+          steps[0]!,
+          {
+            ...steps[1]!,
+            // The app moves on (navigates away from the first step's page), then loads for a while.
+            async onBeforeStep() {
+              removeFirst?.();
+              await gate.promise;
+            },
+          },
+        ],
+        'intro',
+      );
+      await harness.waitForStep('First step');
+      const spinner = page.getByRole('progressbar', {name: 'Loading…'});
+      await page.getByRole('button', {name: 'Next'}).click();
+      // Long before the spinner is due, the step is no longer over what is there now.
+      await vi.waitFor(
+        () => {
+          expect(harness.tooltip()).toBeNull();
+        },
+        {timeout: motion.waitingDelayMs / 2, interval: 10},
+      );
+      expect(spinner.query()).toBeNull();
+      await expect.element(spinner).toBeVisible();
+      gate.resolve();
+      await harness.waitForStep('Second step');
     });
 
     it('can be left while it waits for a step, with a press on the dimmed area', async () => {

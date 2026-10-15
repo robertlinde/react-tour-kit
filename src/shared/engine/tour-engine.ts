@@ -96,6 +96,11 @@ export type TourViewState = {
   readonly tourKey: number;
   readonly steps: readonly TourStep[];
   readonly shown: ShownStep | undefined;
+  /**
+   * While the next step is prepared: the shown step's target has gone (the app moved on, for example
+   * `onBeforeStep` navigated), so the shown step must not stay on screen.
+   */
+  readonly isShownTargetGone: boolean;
   readonly measure: MeasureRequest | undefined;
 };
 
@@ -140,6 +145,8 @@ type State = {
   readonly currentStep: number;
   readonly pendingStepIndex: number | undefined;
   readonly shown: ShownStep | undefined;
+  /** See {@link TourViewState.isShownTargetGone}. */
+  readonly isShownTargetGone: boolean;
   readonly measure: MeasureRequest | undefined;
   /** Where the target being revealed currently is (only meaningful while revealing). */
   readonly revealHighlight: Box | undefined;
@@ -228,6 +235,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     currentStep: 0,
     pendingStepIndex: undefined,
     shown: undefined,
+    isShownTargetGone: false,
     measure: undefined,
     revealHighlight: undefined,
   };
@@ -239,6 +247,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     tourKey: 0,
     steps: emptySteps,
     shown: undefined,
+    isShownTargetGone: false,
     measure: undefined,
   };
 
@@ -248,6 +257,8 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
   let transition: AbortController | undefined;
   /** Observation of the step on screen. */
   let stepScope: AbortController | undefined;
+  /** While the next step is prepared: watching whether the step on screen's target goes away. */
+  let goneScope: AbortController | undefined;
   let shownDetails: ShownDetails | undefined;
   let measureSequence = 0;
   /** A scroll that brings the shown target back into view is running. */
@@ -290,6 +301,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       tourKey: state.session?.key ?? previous.tourKey,
       steps: state.session?.steps ?? emptySteps,
       shown: state.shown,
+      isShownTargetGone: state.isShownTargetGone,
       measure: state.measure,
     };
     const isUnchanged =
@@ -299,6 +311,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       next.tourKey === previous.tourKey &&
       next.steps === previous.steps &&
       next.shown === previous.shown &&
+      next.isShownTargetGone === previous.isShownTargetGone &&
       next.measure === previous.measure;
     return isUnchanged ? previous : next;
   }
@@ -573,7 +586,41 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     keepInViewScope = undefined;
     const controller = new AbortController();
     transition = controller;
+    watchShownTarget().catch(reportError);
     return controller;
+  }
+
+  /**
+   * While the next step is prepared, the step on screen stays (a quick step change shows nothing in
+   * between) and follows its target. Once that target is gone, though, the app has moved on (for
+   * example `onBeforeStep` navigated), and the step must not stay over what is there now.
+   */
+  async function watchShownTarget(): Promise<void> {
+    goneScope?.abort();
+    const {shown} = state;
+    const target = shown?.step.target;
+    if (!shown || target === undefined || state.isShownTargetGone) {
+      return;
+    }
+
+    const scope = new AbortController();
+    goneScope = scope;
+    let last = shownDetails?.measurement;
+    while (!scope.signal.aborted) {
+      // eslint-disable-next-line no-await-in-loop -- one change at a time
+      const current = await options.adapter.waitForMove(target, last, scope.signal);
+      if (scope.signal.aborted || state.shown !== shown) {
+        return;
+      }
+
+      if (!current) {
+        setState({isShownTargetGone: true});
+        return;
+      }
+
+      last = current;
+      void remeasure(scope.signal);
+    }
   }
 
   /**
@@ -744,6 +791,8 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       transition = undefined;
     }
 
+    goneScope?.abort();
+    goneScope = undefined;
     shownDetails = {measurement, size};
     lastTooltipSize = size;
     const highlight = measurement ? highlightOf(measurement) : undefined;
@@ -752,6 +801,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       currentStep: index,
       pendingStepIndex: undefined,
       measure: undefined,
+      isShownTargetGone: false,
       shown: {
         transitionId: id,
         stepIndex: index,
@@ -952,6 +1002,8 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     transition = undefined;
     stepScope?.abort();
     stepScope = undefined;
+    goneScope?.abort();
+    goneScope = undefined;
     shownDetails = undefined;
     for (const resolve of sizeWaiters.values()) {
       resolve(lastTooltipSize ?? fallbackTooltipSize);
@@ -966,6 +1018,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
       currentStep: 0,
       pendingStepIndex: undefined,
       shown: undefined,
+      isShownTargetGone: false,
       measure: undefined,
     });
     safeInvoke(() => session.onTourEnd?.(session.tourId, info));
@@ -1015,6 +1068,7 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
         currentStep: 0,
         pendingStepIndex: 0,
         shown: undefined,
+        isShownTargetGone: false,
         measure: undefined,
       });
       void prepare(0, 1);
@@ -1083,6 +1137,8 @@ export function createTourEngine(initialOptions: TourEngineOptions): TourEngine 
     transition = undefined;
     stepScope?.abort();
     stepScope = undefined;
+    goneScope?.abort();
+    goneScope = undefined;
   }
 
   function resume(): void {

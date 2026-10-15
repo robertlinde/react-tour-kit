@@ -128,7 +128,7 @@ const xoConfig: FlatXoConfig = [
 	},
 	// Node scripts and tool configuration (same formatting as the source: Prettier with spaces)
 	{
-		files: ['test/**/*.mjs', 'vitest.config.ts', 'playwright.config.ts'],
+		files: ['test/**/*.mjs', 'vitest.config.ts', 'playwright.config.ts', 'scripts/**/*.ts'],
 		prettier: true,
 		space: true,
 		semicolon: true,
