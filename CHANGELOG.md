@@ -2,6 +2,12 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.1.1
+
+### Fixed
+
+- When a step's `onBeforeStep` navigated to another page or screen and then took a moment (loading data, for example), the previous step stayed on screen over the new page, its highlight around whatever was there now, until the spinner appeared. Once its target is gone, the previous step now goes at once; the screen stays dimmed and the spinner still appears only after a moment. On React Native, this applies to screens that are left (closed or popped): a screen opened on top keeps the previous one, and with it the target, in place.
+
 ## 1.1.0
 
 ### Added

@@ -94,9 +94,7 @@ function OverlayContent({
   const totalSteps = view.steps.length;
   // The first step can take a while (navigation in onBeforeStep): dim the screen after a moment.
   const isWaitingDimmed = useDelayedFlag(!shown && !isClosing, motion.waitingDelayMs);
-  // Preparing a step takes a while: the highlight closes and a spinner shows that the tour is waiting.
-  const isPreparing = phase === 'preparing' && !isClosing;
-  const isWaiting = useDelayedFlag(isPreparing, motion.waitingDelayMs);
+  const {isPreparing, isWaiting, isShownGone} = usePreparation(view, isClosing);
   // Once on screen, the overlay stays until the tour ends (also when another tour takes over).
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
   const isShowingSomething = shown !== undefined || isWaitingDimmed;
@@ -110,7 +108,7 @@ function OverlayContent({
   useEffect(() => {
     visibleSince.current = isVisible ? Date.now() : undefined;
   }, [isVisible]);
-  const spotlight = useSpotlight(view, isVisible, isReducedMotion, isWaiting);
+  const spotlight = useSpotlight(view, isVisible, isReducedMotion, isWaiting || isShownGone);
   const announcement = useAnnouncement(view, i18n, isClosing, isWaiting);
 
   // Fade out, then unmount.
@@ -201,7 +199,7 @@ function OverlayContent({
             shown={shown}
             totalSteps={totalSteps}
             isBusy={isPreparing}
-            isHidden={phase === 'revealing' || isWaiting}
+            isHidden={phase === 'revealing' || isWaiting || isShownGone}
             isDelayed={spotlight.isMorphing}
             isReducedMotion={isReducedMotion}
             titleId={titleId}
@@ -334,6 +332,21 @@ function MeasuredTooltip({engine, renderer, Tooltip, request, totalSteps}: Measu
       </TooltipLimitsContext.Provider>
     </MeasureFrame>
   );
+}
+
+/**
+ * While the next step is prepared. Preparing it takes a while (`isWaiting`): the highlight closes and
+ * a spinner shows that the tour is waiting. The app moved on before the next step is ready (the step
+ * on screen's target is gone, `isShownGone`): the step goes at once rather than stay over what is
+ * there now, and the spinner still waits for its delay.
+ */
+function usePreparation(
+  view: TourViewState,
+  isClosing: boolean,
+): {readonly isPreparing: boolean; readonly isWaiting: boolean; readonly isShownGone: boolean} {
+  const isPreparing = view.phase === 'preparing' && !isClosing;
+  const isWaiting = useDelayedFlag(isPreparing, motion.waitingDelayMs);
+  return {isPreparing, isWaiting, isShownGone: isPreparing && view.isShownTargetGone};
 }
 
 /** True once `isWaiting` has been true for `delayMs`, as long as it stays true. */
