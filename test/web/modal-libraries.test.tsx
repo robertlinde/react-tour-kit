@@ -167,6 +167,91 @@ describe('a tour inside a Radix modal dialog', () => {
   });
 });
 
+function StartStepsButton({steps: tourSteps}: {readonly steps: TourStep[]}): ReactNode {
+  const {startTour} = useTour();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        startTour(tourSteps);
+      }}
+    >
+      Start tour
+    </button>
+  );
+}
+
+/**
+ * A page with a sticky sidebar, and a full-screen Radix dialog over it whose own header sticks to the
+ * top of its scrolling body. The sidebar stays laid out under the dialog, painted over.
+ */
+function FullScreenDialogOverSidebar({steps: tourSteps}: {readonly steps: TourStep[]}): ReactNode {
+  return (
+    <TourProvider onTourEnd={onTourEnd}>
+      <div style={{display: 'flex'}}>
+        <nav style={{position: 'sticky', top: 0, alignSelf: 'flex-start', width: 256, height: '100vh'}}>Sidebar</nav>
+        <main style={{height: 3000}}>Page</main>
+      </div>
+      <Dialog.Root open>
+        <Dialog.Portal>
+          <Dialog.Content
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'white',
+            }}
+          >
+            <Dialog.Title>Editor</Dialog.Title>
+            <Dialog.Description>A full-screen editor</Dialog.Description>
+            <StartStepsButton steps={tourSteps} />
+            <div id="dialog-body" style={{flex: 1, overflow: 'auto'}}>
+              <header style={{position: 'sticky', top: 0, height: 120, background: 'teal'}}>Dialog header</header>
+              <div id="where-the-sidebar-is" style={{width: 120, height: 40}}>
+                Where the sidebar is
+              </div>
+              <div style={{height: 1600}} />
+              <div id="under-the-header" style={{width: 120, height: 40}}>
+                Under the header
+              </div>
+              <div style={{height: 1600}} />
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </TourProvider>
+  );
+}
+
+describe('a tour inside a full-screen Radix dialog over a page with a sticky sidebar', () => {
+  it('shows a target that lies where the sidebar is, under the dialog', async () => {
+    await render(
+      <FullScreenDialogOverSidebar
+        steps={[{target: '#where-the-sidebar-is', title: 'Where the sidebar is', content: 'Shown'}]}
+      />,
+    );
+    await page.getByRole('button', {name: 'Start tour'}).click();
+    await expect.element(page.getByRole('heading', {name: 'Where the sidebar is'})).toBeVisible();
+    expect(onTourEnd).not.toHaveBeenCalled();
+  });
+
+  it("still moves a target out from under the dialog's own sticky header", async () => {
+    await render(
+      <FullScreenDialogOverSidebar
+        steps={[{target: '#under-the-header', title: 'Under the header', content: 'Not hidden', placement: 'top'}]}
+      />,
+    );
+    document.querySelector('#dialog-body')!.scrollTo({top: 40 + 1600 + 120 - 60, behavior: 'instant'});
+    await page.getByRole('button', {name: 'Start tour'}).click();
+    await expect.element(page.getByRole('heading', {name: 'Under the header'})).toBeVisible();
+    const header = document.querySelector('#dialog-body header')!.getBoundingClientRect();
+    const target = document.querySelector('#under-the-header')!.getBoundingClientRect();
+    expect(target.top).toBeGreaterThanOrEqual(header.bottom);
+  });
+});
+
 describe('a tour inside a modal that makes the rest of the page inert', () => {
   it('stays usable and reachable', async () => {
     await render(

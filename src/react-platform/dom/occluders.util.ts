@@ -1,6 +1,6 @@
 import {intersect} from '../../shared/geometry/box.util.js';
 import type {Box} from '../../shared/geometry/geometry.type.js';
-import {checkVisibility, containsComposed, toBox} from './elements.util.js';
+import {checkVisibility, containsComposed, parentOf, toBox} from './elements.util.js';
 
 /**
  * Elements that stay put while the page scrolls (`position: fixed` or `sticky`): navigation bars,
@@ -46,6 +46,25 @@ function stayingPutElements(layer: Element | undefined): readonly Element[] {
   return found;
 }
 
+/** The app's own dialogs: native `<dialog>` elements and the dialogs of modal libraries (Radix, Headless UI, …). */
+const dialogSelector = 'dialog[open], [role="dialog"], [role="alertdialog"]';
+
+/**
+ * The dialog the target is in, if any: the innermost one. A dialog is drawn above the page it opens
+ * over, so only what is inside it can cover the target. The page underneath stays laid out, its
+ * sticky sidebar included, merely painted over: counted, the sidebar would hide every target of the
+ * dialog that lies where the sidebar is.
+ */
+function dialogOf(target: Element): Element | undefined {
+  for (let current: Element | undefined = target; current; current = parentOf(current)) {
+    if (current.matches(dialogSelector)) {
+      return current;
+    }
+  }
+
+  return undefined;
+}
+
 /** False for elements that are there but cannot be seen: closed menus faded out with `visibility` or `opacity`. */
 function isSeen(element: Element): boolean {
   const checked = checkVisibility(element, {visibilityProperty: true, opacityProperty: true});
@@ -59,15 +78,21 @@ function isSeen(element: Element): boolean {
 
 /**
  * Rectangles (viewport coordinates) of elements that can cover the target. Excluded: elements
- * containing the target (highlighting a link in a sticky navigation) or inside it, empty or
- * invisible ones, and ones covering more than half the screen (app shells, full-screen
- * backgrounds), which cannot be scrolled away from.
+ * containing the target (highlighting a link in a sticky navigation) or inside it, elements outside
+ * the dialog the target is in (the page under it), empty or invisible ones, and ones covering more
+ * than half the screen (app shells, full-screen backgrounds), which cannot be scrolled away from.
  */
 export function findOccluders(target: Element | undefined, layer: Element | undefined): Box[] {
   const screen = {width: document.documentElement.clientWidth, height: document.documentElement.clientHeight};
+  const dialog = target ? dialogOf(target) : undefined;
   const occluders: Box[] = [];
   for (const element of stayingPutElements(layer)) {
     if (!element.isConnected || (target && (containsComposed(element, target) || containsComposed(target, element)))) {
+      continue;
+    }
+
+    // The page under the dialog the target is in: painted over, it covers nothing in the dialog.
+    if (dialog && !containsComposed(dialog, element)) {
       continue;
     }
 
