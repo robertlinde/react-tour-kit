@@ -2,6 +2,12 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.1.2
+
+### Fixed
+
+- Tours inside the app's own dialogs (Radix and shadcn/ui, for example) skipped steps whose target lay where the page under the dialog has a sticky or fixed element — a sidebar under a full-screen dialog, for one: the target counted as covered and could "not be scrolled into view". Only what is inside the dialog a target is in can cover it now; the page underneath, merely painted over, is left out. Sticky headers inside the dialog are still avoided.
+
 ## 1.1.1
 
 ### Fixed
