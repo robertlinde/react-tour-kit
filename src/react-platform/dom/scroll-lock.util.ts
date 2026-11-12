@@ -1,5 +1,5 @@
 import {handlesKey, hasLayout} from './elements.util.js';
-import {readPageOverflow} from './scroll.util.js';
+import {type PageOverflow, pageScrollAxes, readPageOverflow} from './scroll.util.js';
 
 function canScroll(element: Element, deltaX: number, deltaY: number): boolean {
   const style = getComputedStyle(element);
@@ -113,12 +113,23 @@ function scrollByKey(element: Element, direction: -1 | 1, amount: number | 'page
   element.scrollTo({top, behavior: isSmooth ? 'smooth' : 'instant'});
 }
 
-type PageLock = {readonly overflow: {readonly x: string; readonly y: string}; readonly release: () => void};
+type PageLock = {
+  /**
+   * The page's own overflow, which the lock hides: as it was when the tour locked the page.
+   * `undefined` when the lock changed nothing.
+   */
+  readonly overflow: PageOverflow | undefined;
+  readonly release: () => void;
+};
 let pageLock: PageLock | undefined;
 let pageLockUsers = 0;
 
-/** The page's own overflow, also while the tour has locked it. */
-export function pageOverflow(): {readonly x: string; readonly y: string} {
+/**
+ * The page's own overflow, also while the tour has locked it. Read as it is now unless the tour's own
+ * lock hides it: an app's scroll lock still held as the tour opened (a dialog or a sheet that is
+ * still closing) stops keeping the tour from scrolling the page once it is released.
+ */
+export function pageOverflow(): PageOverflow {
   return pageLock?.overflow ?? readPageOverflow();
 }
 
@@ -129,10 +140,13 @@ export function pageOverflow(): {readonly x: string; readonly y: string} {
  * the page (browsers drop the space of styled scrollbars even with `scrollbar-gutter: stable`), and
  * pages cannot block it (the wheel over it scrolls the page whatever its listeners do), so it stays
  * usable; the tour keeps the target in view when it is used. Pages whose `<body>` has an overflow of
- * its own, and pinch-zoomed pages, are left alone too.
+ * its own, and pinch-zoomed pages, are left alone too. So are pages that do not scroll at all
+ * (`overflow: hidden` on both axes), which have no scrollbar to hide: often the app's own scroll lock,
+ * held by a dialog that is still closing, which the tour's lock would outlast.
  */
 function lockPage(): PageLock {
   const overflow = readPageOverflow();
+  const scrolls = pageScrollAxes(overflow);
   const root = document.documentElement;
   const body = document.body ? getComputedStyle(document.body) : undefined;
   const isRootOverflow =
@@ -142,9 +156,9 @@ function lockPage(): PageLock {
   const hasClassicScrollbar =
     globalThis.innerWidth - root.clientWidth > 0.5 || globalThis.innerHeight - root.clientHeight > 0.5;
   const isZoomed = Math.abs((globalThis.visualViewport?.scale ?? 1) - 1) >= 0.01;
-  if (!hasLayout() || !isRootOverflow || hasClassicScrollbar || isZoomed) {
+  if (!hasLayout() || !isRootOverflow || !(scrolls.x || scrolls.y) || hasClassicScrollbar || isZoomed) {
     return {
-      overflow,
+      overflow: undefined,
       release(): void {
         // Nothing was changed.
       },

@@ -564,6 +564,37 @@ describe('TourProvider (web): the tooltip', () => {
     await closed();
     expect(document.documentElement.hasAttribute('style')).toBe(false);
   });
+
+  it("scrolls the page once the app's own lock on <html>, held as the tour opened, is released, and never puts it back", async () => {
+    // What Headless UI's dialogs do while they are open; closing puts the page's own overflow back.
+    document.documentElement.style.overflow = 'hidden';
+    cleanups.push(() => {
+      document.documentElement.removeAttribute('style');
+    });
+    await render(
+      <Harness>
+        <div id="top" style={{width: 200, height: 40, marginTop: 100}}>
+          Top
+        </div>
+        <div style={{height: 3000}} />
+        <div id="deep" style={{width: 200, height: 40}}>
+          Deep
+        </div>
+      </Harness>,
+    );
+    tour?.startTour([
+      {target: '#top', title: 'Top', content: 'Opened while the page is locked'},
+      {target: '#deep', title: 'Deep', content: 'Below the fold'},
+    ]);
+    await shown('Top');
+    document.documentElement.style.overflow = '';
+    await page.getByRole('button', {name: 'Next'}).click();
+    await shown('Deep');
+    expect(window.scrollY).toBeGreaterThan(1000);
+    expectInViewport(query('#deep')!.getBoundingClientRect());
+    await closed();
+    expect(getComputedStyle(document.documentElement).overflowY).toBe('visible');
+  });
 });
 
 describe('TourProvider (web): leaves the page as it was', () => {
