@@ -2,6 +2,13 @@
 
 Releases are published automatically from `main`; each GitHub release lists its commits. This file describes the larger changes.
 
+## 1.1.3
+
+### Fixed
+
+- A tour started while one of the app's dialogs or sheets was still closing (Radix and shadcn/ui, for example) skipped every step whose target lay below the fold, for the whole tour: the dialog still kept the page from scrolling as the tour opened, and the tour went on treating the page as unscrollable once the dialog had let go. The tour now checks whether the page scrolls at every step.
+- The same with dialogs that lock the page on `<html>` (Headless UI, for example), which also left the page unscrollable after the tour: the tour put the dialog's lock back as it had found it when it opened. A page that does not scroll as the tour opens is now left as it is.
+
 ## 1.1.2
 
 ### Fixed

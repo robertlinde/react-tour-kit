@@ -267,3 +267,63 @@ describe('a tour inside a modal that makes the rest of the page inert', () => {
     await expect.element(page.getByRole('heading', {name: 'Second'})).toBeVisible();
   });
 });
+
+let closeDialog: (() => void) | undefined;
+
+/**
+ * A page with a Radix dialog over it, like a phone's navigation sheet: a tour of the page is started
+ * from the dialog, which closes only once the tour is open. Until then, its scroll lock holds the page.
+ */
+function ClosingDialogOverPage({steps: tourSteps}: {readonly steps: TourStep[]}): ReactNode {
+  const [isOpen, setIsOpen] = useState(true);
+  closeDialog = () => {
+    setIsOpen(false);
+  };
+
+  return (
+    <TourProvider onTourEnd={onTourEnd}>
+      <div id="top" style={{width: 200, height: 40, marginTop: 100}}>
+        Top
+      </div>
+      <div style={{height: 3000}} />
+      <div id="below-the-fold" style={{width: 200, height: 40}}>
+        Below the fold
+      </div>
+      <Dialog.Root open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay style={{position: 'fixed', inset: 0, background: 'rgb(0 0 0 / 50%)'}} />
+          <Dialog.Content style={{position: 'fixed', right: 0, bottom: 0, width: 300, background: 'white'}}>
+            <Dialog.Title>Menu</Dialog.Title>
+            <Dialog.Description>Navigation</Dialog.Description>
+            <StartStepsButton steps={tourSteps} />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </TourProvider>
+  );
+}
+
+describe('a tour of the page, started while a Radix dialog over it is still open', () => {
+  it("scrolls to a target below the fold once the dialog's scroll lock is released", async () => {
+    await render(
+      <ClosingDialogOverPage
+        steps={[
+          {target: '#top', title: 'Top', content: 'Shown while the dialog still holds the page'},
+          {target: '#below-the-fold', title: 'Below the fold', content: 'Scrolled into view'},
+        ]}
+      />,
+    );
+    await page.getByRole('button', {name: 'Start tour'}).click();
+    await expect.element(page.getByRole('heading', {name: 'Top'})).toBeVisible();
+    // The tour opened while the dialog held the page's scroll.
+    expect(getComputedStyle(document.body).overflowY).toBe('hidden');
+    closeDialog?.();
+    await vi.waitFor(() => {
+      expect(getComputedStyle(document.body).overflowY).not.toBe('hidden');
+    });
+    await page.getByRole('button', {name: 'Next'}).click();
+    await expect.element(page.getByRole('heading', {name: 'Below the fold'})).toBeVisible();
+    expect(window.scrollY).toBeGreaterThan(1000);
+    expect(onTourEnd).not.toHaveBeenCalled();
+  });
+});

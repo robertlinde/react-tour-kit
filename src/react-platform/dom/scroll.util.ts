@@ -28,11 +28,23 @@ function holdsPageOverflow(element: Element): boolean {
   return element === document.body && getComputedStyle(document.documentElement).overflowY === 'visible';
 }
 
+/** The page's own overflow per axis: its computed `overflow-x` and `overflow-y`. */
+export type PageOverflow = {readonly x: string; readonly y: string};
+
 /** The page's own overflow per axis (from `<html>`, or from `<body>` when `<html>` has none). */
-export function readPageOverflow(): {readonly x: string; readonly y: string} {
+export function readPageOverflow(): PageOverflow {
   const root = getComputedStyle(document.documentElement);
   const style = root.overflowY === 'visible' && document.body ? getComputedStyle(document.body) : root;
   return {x: style.overflowX, y: style.overflowY};
+}
+
+/**
+ * The axes on which the page scrolls: all but those the app keeps from scrolling (`overflow-x:
+ * hidden` against stray horizontal overflow, off-canvas menus, its own scroll lock while a dialog is
+ * open). The tour leaves those alone too.
+ */
+export function pageScrollAxes(overflow: PageOverflow): ScrollAxes {
+  return {x: !['hidden', 'clip'].includes(overflow.x), y: !['hidden', 'clip'].includes(overflow.y)};
 }
 
 function isSet(value: string): boolean {
@@ -213,19 +225,14 @@ export function elementContainer(element: Element, axes: ScrollAxes, occluders: 
  * The page itself; its visible area is the visual viewport minus safe areas and the page's
  * scroll-padding. `overflow` is the page's own (see `readPageOverflow`), not the tour's scroll lock.
  */
-export function pageContainer(
-  occluders: () => readonly Box[],
-  overflow: {readonly x: string; readonly y: string},
-): ScrollContainer {
+export function pageContainer(occluders: () => readonly Box[], overflow: PageOverflow): ScrollContainer {
   const root = (): Element => document.scrollingElement ?? document.documentElement;
   const maxX = (): number => Math.max(0, root().scrollWidth - root().clientWidth);
   const read = (): Point => ({
     x: pageDirection() === 'rtl' ? globalThis.scrollX + maxX() : globalThis.scrollX,
     y: globalThis.scrollY,
   });
-  // The page scrolls unless the app keeps an axis from scrolling (`overflow-x: hidden` against
-  // stray horizontal overflow, off-canvas menus): then the tour leaves that axis alone too.
-  const axes = {x: !['hidden', 'clip'].includes(overflow.x), y: !['hidden', 'clip'].includes(overflow.y)};
+  const axes = pageScrollAxes(overflow);
   return {
     async measure(): Promise<ScrollContainerMetrics | undefined> {
       const viewport = readViewport();
